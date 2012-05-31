@@ -8,11 +8,16 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Classes, SysUtils, zstream;
+  Classes, SysUtils, zstream, FPimage,
+  FPReadPNG, FPReadBMP, FPReadGif,
+  FPWriteJPEG, FPReadJPEG;
 
 type
     TJPDadosImage = record
       caminho: string;
+      dados: TStream;
+      tambits: integer;
+      n: integer;
       w: double;
       h: double;
       cs: string;
@@ -73,7 +78,7 @@ type
     ssLineWidth: double;          // line width in user unit
     ssfontnames: array of string;   // array of Postscript (Type1) font names
     ssfonts: array of TJPFone;              // array of used fonts
-    ssimages: array of string;             // array of used images
+    ssimages: array of TJPDadosImage;             // array of used images
     ssFontFamily: string;         // current font family
     ssFontStyle: string;          // current font style
     ssFontSizePt: double;         // current font size in points
@@ -153,6 +158,7 @@ type
     function ValidaFonte(fonte: string): boolean;
     function FonteFoiUsada(fonte: string): boolean;
     function DevolveNomeFone(nomeAbreviado: string): string;
+    function GetDadosImagem(imgFile: string): TJPDadosImage;
 
     {***************************************************************************
     *                                                                           *
@@ -372,17 +378,11 @@ begin
   SetDecimal('.');
   //Set color for all stroking operations
   if (((ssr = 0) and (ssg = 0) and (ssb = 0)) or (ssg = -1)) then
-    // substr vai de 0 em diante mais número de caracteres
-    // copy vai de 1 em diante mais número de caracteres
-    // i := 1;
-    // substr('abcdef',0,4) // abcd         é igual a        copy('abcdef',1,4);
-    // substr('abcdef',i) // bcdef          é igual a        copy('abcdef',i+1,Length('abcdef')-i);
-    //    Self.ssDrawColor := substr(ssr/255,0,5) + ' G';
-    Self.ssDrawColor := Copy(FloatToStr(ssr / 255), 1, 5) + ' G'
+    Self.ssDrawColor := Copy(FloatToStr(ssr / 255), 0, 5) + ' G'
   else
-    Self.ssDrawColor := Copy(FloatToStr(ssr / 255), 1, 5) + ' ' +
-      Copy(FloatToStr(ssg / 255), 1, 5) + ' ' +
-      Copy(FloatToStr(ssb / 255), 1, 5) + ' RG';
+    Self.ssDrawColor := Copy(FloatToStr(ssr / 255), 0, 5) + ' ' +
+      Copy(FloatToStr(ssg / 255), 0, 5) + ' ' +
+      Copy(FloatToStr(ssb / 255), 0, 5) + ' RG';
   if (Self.sspage > 0) then
     _out(Self.ssDrawColor);
   SetDecimal;
@@ -393,11 +393,11 @@ begin
   SetDecimal('.');
   //Set color for all filling operations
   if (((ssr = 0) and (ssg = 0) and (ssb = 0)) or (ssg = -1)) then
-    Self.ssFillColor := Copy(FloatToStr(ssr / 255), 1, 5) + ' g'
+    Self.ssFillColor := Copy(FloatToStr(ssr / 255), 0, 5) + ' g'
   else
-    Self.ssFillColor := Copy(FloatToStr(ssr / 255), 1, 5) + ' ' +
-      Copy(FloatToStr(ssg / 255), 1, 5) + ' ' +
-      Copy(FloatToStr(ssb / 255), 1, 5) + ' rg';
+    Self.ssFillColor := Copy(FloatToStr(ssr / 255), 0, 5) + ' ' +
+      Copy(FloatToStr(ssg / 255), 0, 5) + ' ' +
+      Copy(FloatToStr(ssb / 255), 0, 5) + ' rg';
   Self.ssColorFlag := (Self.ssFillColor <> Self.ssTextColor);
   if (Self.sspage > 0) then
     _out(Self.ssFillColor);
@@ -409,11 +409,11 @@ begin
   SetDecimal('.');
   //Set color for text
   if (((ssr = 0) and (ssg = 0) and (ssb = 0)) or (ssg = -1)) then
-    Self.ssTextColor := Copy(FloatToStr(ssr / 255), 1, 5) + ' g'
+    Self.ssTextColor := Copy(FloatToStr(ssr / 255), 0, 5) + ' g'
   else
-    Self.ssTextColor := Copy(FloatToStr(ssr / 255), 1, 5) + ' ' +
-      Copy(FloatToStr(ssg / 255), 1, 5) + ' ' +
-      Copy(FloatToStr(ssb / 255), 1, 5) + ' rg';
+    Self.ssTextColor := Copy(FloatToStr(ssr / 255), 0, 5) + ' ' +
+      Copy(FloatToStr(ssg / 255), 0, 5) + ' ' +
+      Copy(FloatToStr(ssb / 255), 0, 5) + ' rg';
   Self.ssColorFlag := (Self.ssFillColor <> Self.ssTextColor);
   SetDecimal;
 end;
@@ -465,7 +465,7 @@ begin
     chave := 13;
   vw := 0;
   vl := Length(sss);
-  for vi := 0 to vl - 1 do
+  for vi := 0 to vl do
     vw += Self.ssfpdf_charwidths[chave][Ord(sss[vi])];
   Result := vw * Self.ssFontSize / 1000;
 end;
@@ -545,7 +545,8 @@ end;
 procedure TJPFpdf.Image(ssfile: string; sx: double; sy: double;
   sw: double; sh: double; sstype: string);
 begin
-
+  SetLength(Self.ssimages,Length(Self.ssimages)+1);
+   Self.ssimages[0] := GetDadosImagem('/home/jean/teste4.png');
   {
   var
     ms: TMemoryStream;
@@ -658,7 +659,7 @@ begin
 		sstxt := StringReplace(StringReplace(StringReplace(sstxt,'\','\\',[rfReplaceAll]),')','\)',[rfReplaceAll]),'(','\(',[rfReplaceAll]);
 		if(Self.ssColorFlag) then
 			sss  +=  'q ' + Self.ssTextColor + ' ';
-		sss  +=  'BT ' + FloatToStr(Self.ssx + vdx) + ' -' + FloatToStr((Self.ssy + 0.5 * sh + 0.3 * Self.ssFontSize)) + ' Td (' + sstxt + ') Tj ET';
+		sss  +=  'BT ' + FloatToStr((Self.ssx + vdx)) + ' -' + FloatToStr((Self.ssy + 0.5 * sh + 0.3 * Self.ssFontSize)) + ' Td (' + sstxt + ') Tj ET';
 		if(Self.ssColorFlag) then
 			sss  +=  ' Q';
 	end;
@@ -766,7 +767,9 @@ begin
 		  _out('0 Tw');
 		end;
     if (vi > 1) then Cell(sw, sh, Copy(vs, vj, vi-vj), vb, 2, ssalign, ssfill) else
-      Cell(sw, 0, Copy(vs, vj, vi-vj), vb, 2, ssalign, ssfill);
+      {if (UpperCase(ssalign) = 'J') then}
+        Cell(sw, 0, Copy(vs, vj, vi-vj), vb, 2, ssalign, ssfill) {else
+          Cell(sw, sh, Copy(vs, vj, vi-vj), vb, 2, ssalign, ssfill)};
 		vi := vi + 1;
 		vsep := -1;
 		vj := vi;
@@ -941,7 +944,7 @@ procedure TJPFpdf._begindoc;
 begin
 	//Start document
 	Self.ssstate := 1;
-	_out('%PDF-1.3');
+	_out('%PDF-1.7');
 end;
 
 function TJPFpdf._setfont(ssfamily: string; ssstyle: string; sssize: double): boolean;
@@ -1568,6 +1571,38 @@ begin
   if (nomeAbreviado = 'symbol')  then Result := 'Symbol' else
   if (nomeAbreviado = 'zapfdingbats')  then Result := 'ZapfDingbats' else
     Error('Nome abreviado de fonte inválido: ' + nomeAbreviado);
+end;
+
+function TJPFpdf.GetDadosImagem(imgFile: string): TJPDadosImage;
+var
+  ir: TFPCustomImageReader;
+  jw: TFPWriterJPEG;
+  im:  TFPMemoryImage;
+  ex: string;
+begin
+  ex := StringReplace(UpperCase(ExtractFileExt(imgFile)),'.','',[rfReplaceAll]);
+  if (ex = '') then Error('Arquivo sem extensão!');
+  try
+  if (ex = 'PNG') then ir := TFPReaderPNG.create else
+  if ((ex = 'JPG') or (ex = 'JPEG')) then ir := TFPReaderJPEG.create else
+  if (ex = 'BMP') then ir := TFPReaderBMP.create else
+  if (ex = 'GIF') then ir := TFPReaderGif.create else
+  Error('Extensão de imagem inválida: ' + ex);
+  im := TFPMemoryImage.create(1,1);
+  jw := TFPWriterJPEG.Create;
+  im.LoadFromFile(imgFile,ir);
+  Result.dados := TMemoryStream.Create;
+  im.SaveToStream(Result.dados,jw);
+  if (jw.GrayScale) then Result.cs := 'GrayScale';
+  Result.w := im.Width;
+  Result.h := im.Height;
+  finally
+    ir.Free;
+    im.Free;
+    jw.Free;
+  end;
+
+
 end;
 
 end.

@@ -1,0 +1,321 @@
+%PDF-1.7
+3 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/Contents 4 0 R>>
+endobj
+4 0 obj
+<</Length 6611>>
+stream
+2.834646 0 0 2.834646 0 841.89 cm
+2 J
+0.2 w
+BT /F1 4.23 Tf ET
+0 0 1 RG
+1 w
+1 1 0 rg
+10 -10 190 -10 re f 10 -10 m 10 -20 l S 10 -10 m 200 -10 l S 200 -10 m 200 -20 l S 10 -20 m 200 -20 l S q 0 g BT 82.202415 -16.269 Td (TEXTO JUSTIFICADO) Tj ET Q
+BT /F2 4.23 Tf ET
+q 0 g BT 11 -31.269 Td (
+) Tj ET Q
+0.5 Tw
+q 0 g BT 11 -33.769 Td (Jean Patrick aprendeu a programar aos doze anos em Basic e DBase II Plus usando um computador MSX.) Tj ET Q
+1.456 Tw
+q 0 g BT 11 -38.769 Td (Três anos mais tarde, em 1990, fez um curso de Clipper Summer 87 patrocinado pelo Instituto de) Tj ET Q
+0.434 Tw
+q 0 g BT 11 -43.769 Td (Desenvolvimento Econômico e Social do Pará \(antigo IDESP\). Em 1992, devido a um acidente em um rio,) Tj ET Q
+0.576 Tw
+q 0 g BT 11 -48.769 Td (passou a depender de uma cadeira de rodas, mas isso não o impediu de continuar como programador. Por) Tj ET Q
+0 Tw
+q 0 g BT 11 -53.769 Td (muito tempo, programou por hobby e para pequena empresa de eletrônica de sua família.) Tj ET Q
+q 0 g BT 11 -58.769 Td (Em 2000, passou a usar sua primeira distribuição Linux \(Conectiva 5\) em dual boot com o Windows.) Tj ET Q
+0.269 Tw
+q 0 g BT 11 -63.769 Td (No segundo semestre de 2006, começou a estudar programação em Delphi e Kylix \(descontinuada versão do) Tj ET Q
+0.151 Tw
+q 0 g BT 11 -68.769 Td (Delphi para Linux\), com o intuito de desenvolver sistemas comerciais. Como não tinha condições de comprar) Tj ET Q
+1.694 Tw
+q 0 g BT 11 -73.769 Td (uma licença comercial do Delphi e ser totalmente contra o uso de cópias piratas, começou como) Tj ET Q
+0.167 Tw
+q 0 g BT 11 -78.769 Td (desenvolvedor autônomo usando a recém lançada versão gratuita do Delphi, o Turbo Delphi Explorer 2006, e) Tj ET Q
+0.113 Tw
+q 0 g BT 11 -83.769 Td (o servidor de banco de dados Firebird, também, gratuito. Um ano depois, conheceu o Lazarus e o Free Pascal,) Tj ET Q
+0 Tw
+q 0 g BT 11 -88.769 Td (e passou a acompanhar o desenvolvimento destes e a fazer testes.) Tj ET Q
+0.095 Tw
+q 0 g BT 11 -93.769 Td (Também, devido à procura crescente por sistemas web, estudou HTML, CSS, JavaScript, AJAX, jQuery, Java) Tj ET Q
+0 Tw
+q 0 g BT 11 -98.769 Td (e PHP.) Tj ET Q
+0.326 Tw
+q 0 g BT 11 -103.769 Td (Possui conhecimento avançado sobre desenvolvimento de programas em ambiente CGI, FastCGI e ambiente) Tj ET Q
+0.674 Tw
+q 0 g BT 11 -108.769 Td (Desktop usando a linguagem Free Pascal e, como segunda linguagem de programação, desenvolve sites e) Tj ET Q
+0.209 Tw
+q 0 g BT 11 -113.769 Td (sistemas web com PHP. Possui ainda conhecimentos sobre bancos de dados, incluindo PostgreSQL, MySQL,) Tj ET Q
+0 Tw
+q 0 g BT 11 -118.769 Td (SQLite e Firebird.) Tj ET Q
+0.346 Tw
+q 0 g BT 11 -123.769 Td (É mantenedor do site www.jpsoft.com.br onde divulga seus trabalhos. Também, presta serviços à divisão de) Tj ET Q
+0.363 Tw
+q 0 g BT 11 -128.769 Td (informática da prefeitura de sua cidade, desenvolvendo sistemas Desktop e Web no S.O. Linux usando Free) Tj ET Q
+0 Tw
+q 0 g BT 11 -133.769 Td (Pascal/Lazarus ou PHP com um servidor de banco de dados PostgreSQL.) Tj ET Q
+0.383 Tw
+q 0 g BT 11 -143.769 Td (No contexto web, a sigla CGI é um acrônimo para a expressão inglesa Common Gateway Interface. Não se) Tj ET Q
+0.7 Tw
+q 0 g BT 11 -148.769 Td (trata de uma linguagem de programação, mas de uma importante especificação tecnológica que permite a) Tj ET Q
+0.253 Tw
+q 0 g BT 11 -153.769 Td (criação de páginas web com conteúdo dinâmico. Portanto, a tecnologia CGI, permite o envio de informações) Tj ET Q
+0.215 Tw
+q 0 g BT 11 -158.769 Td (de um navegador de internet, em um computador cliente, para um programa hospedado em um servidor web.) Tj ET Q
+0.646 Tw
+q 0 g BT 11 -163.769 Td (Este programa analisa as informações recebidas e devolve uma resposta para o computador cliente, e esta) Tj ET Q
+0 Tw
+q 0 g BT 11 -168.769 Td (resposta pode conter dados extraídos de um banco de dados.) Tj ET Q
+q 0 g BT 11 -173.769 Td (Estes programas podem ser escritos em qualquer linguagem de programação e são denominados scripts CGI. ) Tj ET Q
+0.459 Tw
+q 0 g BT 11 -178.769 Td (Mas, quem usa CGI? Todas as principais linguagens de programação para web, de uma forma ou de outra,) Tj ET Q
+0 Tw
+q 0 g BT 11 -183.769 Td (fazem uso desta especificação. Como é o caso do PHP, Java, Ruby, Perl, Python, ASP.NET, etc.) Tj ET Q
+0.147 Tw
+q 0 g BT 11 -188.769 Td (A principal desvantagem desta tecnologia é que, a cada requisição de um aplicativo CGI, um novo processo é) Tj ET Q
+0.472 Tw
+q 0 g BT 11 -193.769 Td (iniciado na máquina servidora o que poderia demandar um tempo de resposta ruim se milhares de usuários) Tj ET Q
+0 Tw
+q 0 g BT 11 -198.769 Td (efetuarem requisições simultâneas.) Tj ET Q
+0.072 Tw
+q 0 g BT 11 -203.769 Td (Este problema começa a ser resolvido quando passamos a usar o Free Pascal para escrever nossos scripts CGI.) Tj ET Q
+0.021 Tw
+q 0 g BT 11 -208.769 Td (Por que? Acontece que uma das principais vantagens de uma aplicação web em Free Pascal, é que esta, por ser) Tj ET Q
+0.008 Tw
+q 0 g BT 11 -213.769 Td (compilada é, em muitos casos, mais rápida do que scripts interpretados \(como é o caso dos escritos em Python,) Tj ET Q
+0 Tw
+q 0 g BT 11 -218.769 Td (Perl e PHP\). ) Tj ET Q
+0.701 Tw
+q 0 g BT 11 -223.769 Td (Também, a execução de uma aplicação CGI é muito mais rápida e leve em Servidores Linux do que em) Tj ET Q
+0.629 Tw
+q 0 g BT 11 -228.769 Td (Servidores Windows. Além disso, fazendo uso do aplicativo servidor de Internet Apache,  haverá um alto) Tj ET Q
+0 Tw
+q 0 g BT 11 -233.769 Td (desempenho para este tipo de aplicações, seja em Linux ou em Windows.) Tj ET Q
+0.073 Tw
+q 0 g BT 11 -238.769 Td (Portanto, no quadro apresentado acima, um aplicativo CGI já seria capaz de responder milhares de requisições) Tj ET Q
+0.164 Tw
+q 0 g BT 11 -243.769 Td (simultaneamente com um desempenho muito bom. No entanto, se você acha que sua aplicação precisa ter um) Tj ET Q
+1.017 Tw
+q 0 g BT 11 -248.769 Td (desempenho extraordinariamente mais alto do que é possível com CGI \(PHP, ASP.NET, Java ou outra) Tj ET Q
+1.127 Tw
+q 0 g BT 11 -253.769 Td (linguagem\), poderá fazer uso da tecnologia FastCGI, disponível para o Apache através de um módulo) Tj ET Q
+0 Tw
+q 0 g BT 11 -258.769 Td (adicional.) Tj ET Q
+0.368 Tw
+q 0 g BT 11 -263.769 Td (Uma aplicação FastCGI, assim como o CGI, pode ser escrita em Free Pascal ou qualquer linguagem que dê) Tj ET Q
+0.161 Tw
+q 0 g BT 11 -268.769 Td (suporte a esta tecnologia. Porém, a sua metodologia de processamento difere do CGI padrão. Pois, é capaz de) Tj ET Q
+0 Tw
+q 0 g BT 11 -273.769 Td (criar um único processo para um aplicativo FastCGI que responderá a múltiplas requisições.) Tj ET Q
+0.003 Tw
+0 Tw
+endstream
+endobj
+5 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/Contents 6 0 R>>
+endobj
+6 0 obj
+<</Length 1189>>
+stream
+2.834646 0 0 2.834646 0 841.89 cm
+2 J
+1 w
+BT /F2 4.23 Tf ET
+0 0 1 RG
+1 1 0 rg
+0.003 Tw
+q 0 g BT 11 -13.769 Td (Agora, saindo do campo da performance e entrando na questão da segurança das aplicações, lembremos que os) Tj ET Q
+0.216 Tw
+q 0 g BT 11 -18.769 Td (scripts web escritos em Free Pascal, por serem compilados, não deixam o código fonte do projeto exposto no) Tj ET Q
+0.362 Tw
+q 0 g BT 11 -23.769 Td (servidor web. Isso é extremamente importante em uma Intranet, pois evita que seu código seja bisbilhotado,) Tj ET Q
+0 Tw
+q 0 g BT 11 -28.769 Td (modificado por terceiros ou mesmo copiado. E na internet vai dificultar a ação de crackers.) Tj ET Q
+0.942 Tw
+q 0 g BT 11 -33.769 Td (Portanto, usando os recursos disponíveis no moderno compilador Free Pascal, mais a IDE Lazarus para) Tj ET Q
+0.649 Tw
+q 0 g BT 11 -38.769 Td (desenvolvimento RAD, associado ainda à tecnologia FastCGI e a um servidor Apache executando em um) Tj ET Q
+0.069 Tw
+q 0 g BT 11 -43.769 Td (sistema operacional Linux, podemos criar facilmente aplicativos web, rápidos, seguros, tão bons quanto ou até) Tj ET Q
+0 Tw
+q 0 g BT 11 -48.769 Td (melhores que os criados em linguagens como PHP, Python e Java.) Tj ET Q
+endstream
+endobj
+7 0 obj
+<</Type /Page
+/Parent 1 0 R
+/MediaBox [0 0 841.89 595.28]
+/Resources 2 0 R
+/Contents 8 0 R>>
+endobj
+8 0 obj
+<</Length 380>>
+stream
+2.834646 0 0 2.834646 0 595.28 cm
+2 J
+1 w
+BT /F2 4.23 Tf ET
+0 0 1 RG
+1 1 0 rg
+BT /F3 5.64 Tf ET
+q 0 g BT 11 -16.692 Td (Free Jpdf Pascal) Tj ET Q
+BT /F4 5.64 Tf ET
+q 0.384 0.576 0.780 rg BT 11 -26.692 Td (Free Jpdf Pascal) Tj ET Q
+90 -10 m 100 -100 l S
+0.694 0.125 0.039 rg
+50 -50 100 -100 re f
+BT /F5 14.11 Tf ET
+q 0.360 1 0.4 rg BT 20 -180 Td (PDF para Free Pascal Web) Tj ET Q
+endstream
+endobj
+9 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/Contents 10 0 R>>
+endobj
+10 0 obj
+<</Length 249>>
+stream
+2.834646 0 0 2.834646 0 841.89 cm
+2 J
+1 w
+BT /F5 14.11 Tf ET
+0 0 1 RG
+0.694 0.125 0.039 rg
+BT /F3 5.64 Tf ET
+q 0.360 1 0.4 rg BT 11 -16.692 Td (Free Jpdf Pascal) Tj ET Q
+BT /F6 5.64 Tf ET
+q 0.360 1 0.4 rg BT 11 -26.692 Td (Free Jpdf Pascal) Tj ET Q
+endstream
+endobj
+11 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/Contents 12 0 R>>
+endobj
+12 0 obj
+<</Length 248>>
+stream
+2.834646 0 0 2.834646 0 841.89 cm
+2 J
+1 w
+BT /F6 5.64 Tf ET
+0 0 1 RG
+0.694 0.125 0.039 rg
+BT /F3 5.64 Tf ET
+q 0.360 1 0.4 rg BT 11 -16.692 Td (Free Jpdf Pascal) Tj ET Q
+BT /F4 5.64 Tf ET
+q 0.360 1 0.4 rg BT 11 -26.692 Td (Free Jpdf Pascal) Tj ET Q
+endstream
+endobj
+13 0 obj
+<</Type /Font
+/Subtype /Type1
+/BaseFont /Times-Bold
+/Encoding /WinAnsiEncoding
+>>
+endobj
+14 0 obj
+<</Type /Font
+/Subtype /Type1
+/BaseFont /Times-Roman
+/Encoding /WinAnsiEncoding
+>>
+endobj
+15 0 obj
+<</Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica-Bold
+/Encoding /WinAnsiEncoding
+>>
+endobj
+16 0 obj
+<</Type /Font
+/Subtype /Type1
+/BaseFont /Courier-Bold
+/Encoding /WinAnsiEncoding
+>>
+endobj
+17 0 obj
+<</Type /Font
+/Subtype /Type1
+/BaseFont /Times-BoldItalic
+/Encoding /WinAnsiEncoding
+>>
+endobj
+18 0 obj
+<</Type /Font
+/Subtype /Type1
+/BaseFont /Courier-BoldOblique
+/Encoding /WinAnsiEncoding
+>>
+endobj
+1 0 obj
+<</Type /Pages
+/Kids [3 0 R 5 0 R 7 0 R 9 0 R 11 0 R ]
+/Count 5
+/MediaBox [0 0 595.28 841.89]
+>>
+endobj
+2 0 obj
+<</ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+/Font <<
+/F1 13 0 R
+/F2 14 0 R
+/F3 15 0 R
+/F4 16 0 R
+/F5 17 0 R
+/F6 18 0 R
+>>
+>>
+endobj
+19 0 obj
+<</Producer (FPDF 1.41)
+/CreationDate (D:31052012000000)>>
+endobj
+20 0 obj
+<</Type /Catalog
+/OpenAction [3 0 R /FitH null]
+/Pages 1 0 R>>
+endobj
+xref
+0 21
+0000000000 65535 f 
+0000009963 00000 n 
+0000010075 00000 n 
+0000000009 00000 n 
+0000000087 00000 n 
+0000006747 00000 n 
+0000006825 00000 n 
+0000008063 00000 n 
+0000008171 00000 n 
+0000008599 00000 n 
+0000008678 00000 n 
+0000008976 00000 n 
+0000009056 00000 n 
+0000009353 00000 n 
+0000009451 00000 n 
+0000009550 00000 n 
+0000009652 00000 n 
+0000009752 00000 n 
+0000009856 00000 n 
+0000010219 00000 n 
+0000010294 00000 n 
+trailer
+<</Size 21
+/Root 20 0 R
+/Info 19 0 R>>
+startxref
+10373
+%%EOF
