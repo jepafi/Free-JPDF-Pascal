@@ -8,34 +8,36 @@
         <Filename Value="progjpfpdf.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="progjpfpdf"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="17"/>
-        <CursorPos X="29" Y="18"/>
-        <UsageCount Value="154"/>
+        <TopLine Value="12"/>
+        <CursorPos X="33" Y="20"/>
+        <UsageCount Value="190"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="libjpfpdf.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="libjpfpdf"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="1199"/>
-        <CursorPos X="56" Y="1202"/>
+        <TopLine Value="1539"/>
+        <CursorPos X="1" Y="1574"/>
         <ExtraEditorCount Value="2"/>
         <ExtraEditor1>
-          <WindowIndex Value="2"/>
-          <TopLine Value="703"/>
-          <CursorPos X="1" Y="706"/>
+          <IsVisibleTab Value="True"/>
+          <EditorIndex Value="0"/>
+          <WindowIndex Value="1"/>
+          <TopLine Value="797"/>
+          <CursorPos X="40" Y="833"/>
         </ExtraEditor1>
         <ExtraEditor2>
           <WindowIndex Value="1"/>
           <TopLine Value="646"/>
           <CursorPos X="90" Y="650"/>
         </ExtraEditor2>
-        <UsageCount Value="154"/>
+        <UsageCount Value="190"/>
         <Loaded Value="True"/>
       </Unit1>
       <Unit2>
@@ -45,7 +47,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="1" Y="1"/>
-        <UsageCount Value="101"/>
+        <UsageCount Value="137"/>
         <Loaded Value="True"/>
       </Unit2>
       <Unit3>
@@ -54,129 +56,133 @@
         <WindowIndex Value="0"/>
         <TopLine Value="15"/>
         <CursorPos X="21" Y="21"/>
-        <UsageCount Value="24"/>
+        <UsageCount Value="21"/>
       </Unit3>
     </Units>
     <General>
       <ActiveWindowIndexAtStart Value="0"/>
     </General>
-    <JumpHistory Count="29" HistoryIndex="28">
+    <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="872" Column="31" TopLine="843"/>
+        <Caret Line="726" Column="27" TopLine="707"/>
       </Position1>
       <Position2>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="1043" Column="78" TopLine="1015"/>
+        <Caret Line="674" Column="1" TopLine="665"/>
       </Position2>
       <Position3>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="1045" Column="29" TopLine="1016"/>
+        <Caret Line="679" Column="20" TopLine="653"/>
       </Position3>
       <Position4>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="1046" Column="34" TopLine="1017"/>
+        <Caret Line="674" Column="19" TopLine="671"/>
       </Position4>
       <Position5>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="1219" Column="27" TopLine="1204"/>
+        <Caret Line="623" Column="44" TopLine="618"/>
       </Position5>
       <Position6>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="2" Column="27" TopLine="1"/>
+        <Caret Line="3" Column="66" TopLine="1"/>
       </Position6>
       <Position7>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="45" Column="43" TopLine="23"/>
+        <Caret Line="766" Column="207" TopLine="745"/>
       </Position7>
       <Position8>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="52" Column="12" TopLine="23"/>
+        <Caret Line="678" Column="12" TopLine="670"/>
       </Position8>
       <Position9>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="2" Column="55" TopLine="1"/>
+        <Caret Line="770" Column="17" TopLine="755"/>
       </Position9>
       <Position10>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="50" Column="14" TopLine="21"/>
+        <Caret Line="755" Column="45" TopLine="744"/>
       </Position10>
       <Position11>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="942" Column="16" TopLine="913"/>
+        <Caret Line="643" Column="12" TopLine="622"/>
       </Position11>
       <Position12>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="943" Column="66" TopLine="914"/>
+        <Caret Line="676" Column="76" TopLine="674"/>
       </Position12>
       <Position13>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="957" Column="16" TopLine="928"/>
+        <Caret Line="142" Column="78" TopLine="126"/>
       </Position13>
       <Position14>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="1012" Column="29" TopLine="984"/>
+        <Caret Line="1" Column="40" TopLine="1"/>
       </Position14>
       <Position15>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="1013" Column="47" TopLine="984"/>
+        <Caret Line="86" Column="17" TopLine="73"/>
       </Position15>
       <Position16>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="1083" Column="55" TopLine="1054"/>
+        <Caret Line="814" Column="14" TopLine="805"/>
       </Position16>
       <Position17>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="1084" Column="16" TopLine="1055"/>
+        <Caret Line="838" Column="19" TopLine="812"/>
       </Position17>
       <Position18>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="2" Column="46" TopLine="1"/>
+        <Caret Line="841" Column="9" TopLine="830"/>
       </Position18>
       <Position19>
-        <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="842" Column="17" TopLine="823"/>
+        <Filename Value="progjpfpdf.lpr"/>
+        <Caret Line="24" Column="23" TopLine="9"/>
       </Position19>
       <Position20>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="1" Column="72" TopLine="1"/>
+        <Caret Line="763" Column="1" TopLine="747"/>
       </Position20>
       <Position21>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="549" Column="13" TopLine="520"/>
+        <Caret Line="735" Column="27" TopLine="717"/>
       </Position21>
       <Position22>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="806" Column="1" TopLine="777"/>
+        <Caret Line="736" Column="12" TopLine="725"/>
       </Position22>
       <Position23>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="812" Column="1" TopLine="783"/>
+        <Caret Line="679" Column="9" TopLine="673"/>
       </Position23>
       <Position24>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="819" Column="1" TopLine="790"/>
+        <Caret Line="760" Column="63" TopLine="749"/>
       </Position24>
       <Position25>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="828" Column="1" TopLine="799"/>
+        <Caret Line="770" Column="14" TopLine="761"/>
       </Position25>
       <Position26>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="864" Column="1" TopLine="834"/>
+        <Caret Line="812" Column="6" TopLine="802"/>
       </Position26>
       <Position27>
-        <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="939" Column="1" TopLine="910"/>
+        <Filename Value="progjpfpdf.lpr"/>
+        <Caret Line="25" Column="29" TopLine="8"/>
       </Position27>
       <Position28>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="1140" Column="1" TopLine="1109"/>
+        <Caret Line="683" Column="9" TopLine="677"/>
       </Position28>
       <Position29>
         <Filename Value="libjpfpdf.pas"/>
-        <Caret Line="1150" Column="13" TopLine="1121"/>
+        <Caret Line="840" Column="38" TopLine="832"/>
       </Position29>
+      <Position30>
+        <Filename Value="libjpfpdf.pas"/>
+        <Caret Line="786" Column="64" TopLine="771"/>
+      </Position30>
     </JumpHistory>
   </ProjectSession>
 </CONFIG>

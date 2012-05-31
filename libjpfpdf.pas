@@ -35,6 +35,8 @@ type
       numero: integer;
     end;
 
+    TJPCor = (jpBlack,jpSilver,jpGray);
+
   { TJPFpdf }
 
   TJPFpdf = class
@@ -81,7 +83,7 @@ type
     ssTextColor: string;          // commands for text color
     ssColorFlag: boolean;
     // indicates whether fill and text colors are different
-    ssws: integer;                 // word spacing
+    ssws: double;                 // word spacing
     ssAutoPageBreak: boolean;      // automatic page breaking
     ssPageBreakTrigger: double;   // threshold used to trigger page breaks
     ssInFooter: boolean;           // flag set when processing footer
@@ -114,8 +116,8 @@ type
     procedure SetAuthor(sauthor: string);
     procedure SetKeywords(skeywords: string);
     procedure SetCreator(screator: string);
-    procedure AliasNbPages(ssalias: string = 'beginnbend;');
-    procedure Falha(ssmsg: string);
+    procedure AliasNbPages(ssalias: string = '/{nb/}');
+    procedure Error(ssmsg: string);
     procedure Open;
     procedure Close;
     procedure AddPage(ssorientation: string = '');
@@ -125,6 +127,7 @@ type
     procedure SetDrawColor(ssr: integer; ssg: integer = -1; ssb: integer = -1);
     procedure SetFillColor(ssr: integer; ssg: integer = -1; ssb: integer = -1);
     procedure SetTextColor(ssr: integer; ssg: integer = -1; ssb: integer = -1);
+    procedure SetTextColor(cor: TJPCor);
     function GetStringWidth(sss: string): double;
     procedure SetLineWidth(sswidth: double);
     procedure Line(ssx1, ssy1, ssx2, ssy2: double);
@@ -136,7 +139,7 @@ type
     procedure Cell(sw: double; sh: double = 0.0; sstxt: string = ''; // sw de int->dou e sh de int->dou
       ssborder: string = '0'; ssln: integer = 0; ssalign: string = '';
       ssfill: integer = 0);
-    procedure MultiCell(sw, sh: double; sstxt: string; ssborder: integer = 0;
+    procedure MultiCell(sw, sh: double; sstxt: string; ssborder: string = '0';
       ssalign: string = 'J'; ssfill: integer = 0);
     procedure Image(ssfile: string; sx: double; sy: double;
       sw: double; sh: double = 0.0; sstype: string = '');
@@ -207,7 +210,7 @@ begin
   else if (ssmode = 'zoom') then
     Self.ssDisplayMode := IntToStr(ssz)
   else
-    Falha('Incorrect display mode: ' + ssmode);
+    Error('Incorrect display mode: ' + ssmode);
 end;
 
 procedure TJPFpdf.SetCompression(scompress: boolean);
@@ -252,7 +255,7 @@ begin
   Self.ssAliasNbPages := ssalias;
 end;
 
-procedure TJPFpdf.Falha(ssmsg: string);
+procedure TJPFpdf.Error(ssmsg: string);
 begin
   //Fatal error
   raise Exception.Create('JPFPDF error: ' + ssmsg);
@@ -268,7 +271,7 @@ procedure TJPFpdf.Close;
 begin
   //Terminate document
   if (Self.sspage = 0) then
-    Falha('Document contains no page');
+    Error('Document contains no page');
   //Page footer
   Self.ssInFooter := True;
   Footer;
@@ -415,6 +418,11 @@ begin
   SetDecimal;
 end;
 
+procedure TJPFpdf.SetTextColor(cor: TJPCor);
+begin
+  if (cor = jpBlack) then SetTextColor(0,0,0);
+end;
+
 function TJPFpdf.GetStringWidth(sss: string): double;
 var
   fonte: string;
@@ -502,7 +510,7 @@ begin
   SetDecimal('.');
 	//Select a font; size given in points
 	if not(_setfont(sfamily,sstyle,ssize)) then
-		Falha('Incorrect font family or style: ' + sfamily + ' ' + sstyle);
+		Error('Incorrect font family or style: ' + sfamily + ' ' + sstyle);
   SetDecimal;
 end;
 
@@ -563,7 +571,7 @@ begin
 		begin
 			sspos := strrpos(ssfile,'.');
 			if(not sspos) then
-				Self.ssFalha('Image file has no extension and no type was specified: ' + ssfile);
+				Self.ssError('Image file has no extension and no type was specified: ' + ssfile);
 			sstype := substr(ssfile,sspos+1);
 		end;
 		sstype := strtolower(sstype);
@@ -574,7 +582,7 @@ begin
 		else if(sstype = 'png') then
 			ssinfo := _parsepng(ssfile);
 		else
-			Self.ssFalha('Unsupported image file type: ' + sstype);
+			Self.ssError('Unsupported image file type: ' + sstype);
 		set_magic_quotes_runtime(ssmqr);
 		ssinfo['n'] := count(Self.ssimages)+1;
 		Self.ssimages[ssfile] := ssinfo;
@@ -597,17 +605,22 @@ var
   sss: string;
 begin
   SetDecimal('.');
+  //sstxt := Utf8ToAnsi(sstxt);
   //Output a cell
 	if(((Self.ssy + sh) > Self.ssPageBreakTrigger) and not (Self.ssInFooter) and (AcceptPageBreak())) then
 	begin
 		vx := Self.ssx;
 		vws := Self.ssws;
-		if(vws > 0) then
+		if(vws > 0) then begin
+      Self.ssws := 0;
 			_out('0 Tw');
+    end;
 		AddPage(Self.ssCurOrientation);
 		Self.ssx := vx;
-		if(vws > 0) then
+		if(vws > 0) then begin
+      Self.ssws := vws;
 			_out(FloatToStr(vws) + ' Tw');
+      end;
 	end;
 	if(sw = 0) then
 		sw := Self.ssw - Self.sslMargin - Self.ssx;
@@ -620,17 +633,18 @@ begin
 		else
 			sss  +=  'S ';
 	end;
-	if((ssborder = 'L') or (ssborder = 'T') or (ssborder = 'R') or (ssborder = 'B')) then
+
+	if((Pos('L',ssborder) > 0) or (Pos('T',ssborder) > 0) or (Pos('R',ssborder) > 0) or (Pos('B',ssborder) > 0)) then
 	begin
 		vx := Self.ssx;
 		vy := Self.ssy;
-		if(ssborder = 'L') then
+		if(Pos('L',ssborder) > 0) then
 			sss  +=  FloatToStr(vx) + ' -' + FloatToStr(vy) + ' m ' + FloatToStr(vx) + ' -' + FloatToStr((vy + sh)) + ' l S ';
-		if(ssborder = 'T') then
+		if(Pos('T',ssborder) > 0) then
 			sss  +=  FloatToStr(vx) + ' -' + FloatToStr(vy) + ' m ' + FloatToStr((vx + sw)) + ' -' + FloatToStr(vy) + ' l S ';
-		if(ssborder = 'R') then
+		if(Pos('R',ssborder) > 0) then
 			sss  +=  FloatToStr((vx + sw)) + ' -' + FloatToStr(vy) + ' m ' + FloatToStr((vx + sw)) + ' -' + FloatToStr((vy + sh)) + ' l S ';
-		if(ssborder = 'B') then
+		if(Pos('B',ssborder) > 0) then
 			sss  +=  FloatToStr(vx) + ' -' + FloatToStr((vy + sh)) + ' m ' + FloatToStr((vx + sw)) + ' -' + FloatToStr((vy + sh)) + ' l S ';
 	end;
 	if(sstxt <> '') then
@@ -663,10 +677,159 @@ begin
   SetDecimal;
 end;
 
-procedure TJPFpdf.MultiCell(sw, sh: double; sstxt: string; ssborder: integer;
+procedure TJPFpdf.MultiCell(sw, sh: double; sstxt: string; ssborder: string;
   ssalign: string; ssfill: integer);
+var
+  vb,vb2: string;
+  vc: char;
+  fonte,vs: string;
+  chave,vnb,vsep,vi,vj,vl,vns,vnl,vls: integer;
+  vwmax,vx,vy: double;
 begin
-  // Implementar na próxima versão
+fonte := LowerCase(Self.ssFontFamily) + UpperCase(Self.ssFontStyle);
+if ((fonte = 'courier') or (fonte = 'courierB') or (fonte = 'courierI') or
+  (fonte = 'courierBI')) then
+  chave := 0
+else
+if ((fonte = 'helvetica') or (fonte = 'arial')) then
+  chave := 4
+else
+if ((fonte = 'helveticaB') or (fonte = 'arialB')) then
+  chave := 5
+else
+if ((fonte = 'helveticaI') or (fonte = 'arialI')) then
+  chave := 6
+else
+if ((fonte = 'helveticaBI') or (fonte = 'arialBI')) then
+  chave := 7
+else
+if (fonte = 'times') then
+  chave := 8
+else
+if (fonte = 'timesB') then
+  chave := 9
+else
+if (fonte = 'timesI') then
+  chave := 10
+else
+if (fonte = 'timesBI') then
+  chave := 11
+else
+if (fonte = 'symbol') then
+  chave := 12
+else
+if (fonte = 'zapfdingbats') then
+  chave := 13;
+if(sw = 0) then
+	sw := Self.ssw - Self.sslMargin - Self.ssx;
+vwmax := (sw - 2 * Self.sscMargin) * 1000 / Self.ssFontSize;
+sstxt := #10 + sstxt;
+vs := StringReplace(sstxt,#13,'',[rfReplaceAll]);
+vnb := Length(vs);
+if((vnb > 0) and (vs[vnb - 1] = #10)) then
+	vnb := vnb - 1;
+vb := '';
+if(ssborder <> '') then
+begin
+	if(ssborder = '1') then
+	begin
+		ssborder := 'LTRB';
+		vb := 'LRT';
+		vb2 := 'LR';
+	end
+	else
+	begin
+		vb2 := '';
+		if(Pos('L',ssborder) > 0) then
+			vb2 += 'L';
+		if(Pos('R',ssborder) > 0) then
+			vb2 += 'R';
+    if(Pos('T',ssborder) > 0) then vb := vb2 + 'T' else vb := vb2;
+	end;
+end;
+vsep := -1;
+vi := 0;
+vj := 0;
+vl := 0;
+vns := 0;
+vnl := 1;
+while(vi < vnb) do
+begin
+	//Get next character
+	vc := vs[vi];
+	if(vc = #10) then
+	begin
+		//Explicit line break
+		if(Self.ssws > 0) then
+		begin
+			Self.ssws := 0;
+		  _out('0 Tw');
+		end;
+    if (vi > 1) then Cell(sw, sh, Copy(vs, vj, vi-vj), vb, 2, ssalign, ssfill) else
+      Cell(sw, 0, Copy(vs, vj, vi-vj), vb, 2, ssalign, ssfill);
+		vi := vi + 1;
+		vsep := -1;
+		vj := vi;
+		vl := 0;
+		vns := 0;
+		vnl := vnl + 1;
+		if((ssborder <> '') and (vnl = 2)) then
+			vb := vb2;
+		continue;
+	end;
+	if(vc = ' ') then
+	begin
+		vsep := vi;
+		vls := vl;
+		vns := vns + 1;
+	end;
+	vl += Self.ssfpdf_charwidths[chave][Ord(vc)];
+	if(vl > vwmax) then
+	begin
+		//Automatic line break
+		if(vsep = -1) then
+		begin
+	  	if(vi = vj) then
+				vi := vi + 1;
+			if(Self.ssws > 0) then
+			begin
+				Self.ssws := 0;
+				_out('0 Tw');
+			end;
+			Cell(sw, sh, Copy(vs,vj,vi-vj), vb, 2, ssalign, ssfill);
+		end
+		else
+		begin
+			if(ssalign = 'J') then
+			begin
+        if (vns > 1) then Self.ssws := StrToFloat(FloatToStrF((vwmax - vls) / 1000 * Self.ssFontSize / (vns - 1),ffNumber,14,3)) else
+          Self.ssws := 0;
+				_out(FloatToStr(Self.ssws) + ' Tw');
+			end;
+		 	Cell(sw, sh, Copy(vs,vj,vsep-vj), vb, 2, ssalign, ssfill);
+			vi := vsep + 1;
+		end;
+		vsep := -1;
+		vj := vi;
+		vl := 0;
+		vns := 0;
+		vnl := vnl + 1;
+		if((ssborder = '') and (vnl = 2)) then
+			vb := vb2;
+	end
+	else
+		vi := vi + 1;
+end;
+//Last chunk
+if(Self.ssws > 0) then
+begin
+	Self.ssws := 0;
+	_out('0 Tw');
+end;
+if((ssborder <> '') and (Pos('B',ssborder) > 0)) then
+	vb += 'B';
+Cell(sw, sh, Copy(vs, vj, vi-vj), vb, 2, ssalign, ssfill);
+Self.ssx := Self.sslMargin;
 end;
 
 procedure TJPFpdf.Ln(sh: double);
@@ -742,7 +905,7 @@ begin
 		//Send to browser
 //		Header('Content-Type: application/pdf');
 //		if(headers_sent()) then
-//			Self.ssFalha('Some data has already been output to browser, can\'t send PDF file');
+//			Self.ssError('Some data has already been output to browser, can\'t send PDF file');
 //		Header('Content-Length: ' + strlen(Self.ssbuffer));
 //		Header('Content-disposition: inline; filename := doc.pdf');
 //		echo Self.ssbuffer;
@@ -757,7 +920,7 @@ begin
 //			else
 //				Header('Content-Type: application/octet-stream');
 //			if(headers_sent()) then
-//				Self.ssFalha('Some data has already been output to browser, can\'t send PDF file');
+//				Self.ssError('Some data has already been output to browser, can\'t send PDF file');
 //			Header('Content-Length: ' + strlen(Self.ssbuffer));
 //			Header('Content-disposition: attachment; filename := ' + ssfile);
 //			echo Self.ssbuffer;
@@ -768,7 +931,7 @@ begin
       try
         Self.ssbuffer.SaveToFile(ssfile);
       except
-        Falha('Unable to create output file: ' + ssfile);
+        Error('Unable to create output file: ' + ssfile);
       end;
 	end;
 end;
@@ -825,8 +988,11 @@ begin
 	Self.ssFontStyle := ssstyle;
 	Self.ssFontSizePt := sssize;
 	Self.ssFontSize := StrToFloat(FloatToStrF(sssize / Self.ssk, ffNumber, 14, 2));
-	if(Self.sspage > 0) then
-		_out('BT /F' + IntToStr(vn + 1) + ' ' + FloatToStrF(Self.ssFontSize, ffNumber, 14, 2) + ' Tf ET');
+  for vn := 0 to Length(Self.ssfonts) do begin
+    if (Self.ssfonts[vn].nome = vfontname) then break;
+  end;
+if(Self.sspage > 0) then
+		_out('BT /F' + IntToStr(Self.ssfonts[vn].numero) + ' ' + FloatToStrF(Self.ssFontSize, ffNumber, 14, 2) + ' Tf ET');
 	Result := true;
   SetDecimal;
 end;
@@ -864,8 +1030,8 @@ begin
 		_out('<</Type /Page');
 		_out('/Parent 1 0 R');
 // RESOLVER
-//		if(Self.ssOrientationChanges[vn]) then
-//			_out('/MediaBox [0 0 ' + FloatToStr(vhPt) + ' ' + FloatToStr(vwPt) + ']');
+		if(Self.ssOrientationChanges[vn]) then
+			_out('/MediaBox [0 0 ' + FloatToStr(vhPt) + ' ' + FloatToStr(vwPt) + ']');
 // ---------------------
 		_out('/Resources 2 0 R');
 		_out('/Contents ' + IntToStr(Self.ssn + 1) + ' 0 R>>');
@@ -1035,7 +1201,7 @@ begin
 	else
 	begin
 		ssorientation := UpperCase(ssorientation);
-    SetLength(Self.ssOrientationChanges,Length(Self.ssOrientationChanges) + 1);
+//    SetLength(Self.ssOrientationChanges,Length(Self.ssOrientationChanges) + 1);
 		if(ssorientation <> Self.ssDefOrientation) then
 			Self.ssOrientationChanges[Self.sspage] := true else
         Self.ssOrientationChanges[Self.sspage] := false;
@@ -1102,7 +1268,7 @@ begin
       break;
     end;
   end;
-  if (n = 0) then Falha('Fonte não foi encontrada: ' + vfontname);
+  if (n = 0) then Error('Fonte não foi encontrada: ' + vfontname);
   if(Self.sspage > 0) then
 		_out('BT /F' + IntToStr(n) + ' ' + FloatToStrF(Self.ssFontSize, ffNumber, 14, 2) + ' Tf ET');
 end;
@@ -1207,7 +1373,7 @@ begin
 //  Self.ssbuffer := TMemoryStream.Create;
   Self.ssbuffer.Position := 0;
   SetLength(Self.sspages, 2);
-  SetLength(Self.ssOrientationChanges, 2);
+  SetLength(Self.ssOrientationChanges, 64000000);
   SetLength(Self.ssoffsets, 64000000);
   Self.ssstate := 0;
   //SetLength(Self.ssfonts, 14);
@@ -1262,7 +1428,7 @@ begin
   else if (ssunit = 'in') then
     Self.ssk := 72
   else
-    Falha('Incorrect unit: ' + ssunit);
+    Error('Incorrect unit: ' + ssunit);
   //Page format
 {  if(is_string(ssformat)) then
   begin}
@@ -1293,7 +1459,7 @@ begin
     aformat[1] := 1008;
   end
   else
-    Falha('Unknown page format: ' + ssformat);
+    Error('Unknown page format: ' + ssformat);
   Self.ssfwPt := aformat[0];
   Self.ssfhPt := aformat[1];
 {  end    //                  TAMANHO PERSONALIZADO ssformat sintaxe '9999.99,9999.99' largura,altura
@@ -1319,7 +1485,7 @@ begin
     Self.sshPt := Self.ssfwPt;
   end
   else
-    Falha('Incorrect orientation: ' + ssorientation);
+    Error('Incorrect orientation: ' + ssorientation);
   Self.ssCurOrientation := Self.ssDefOrientation;
   // StrToFloat(FloatToStrF(Self.ssfwPt/Self.ssk,ffNumber,14,2));
   Self.ssw := StrToFloat(FloatToStrF(Self.sswPt / Self.ssk, ffNumber, 14, 2));
@@ -1401,7 +1567,8 @@ begin
   if (nomeAbreviado = 'timesBI')  then Result := 'Times-BoldItalic' else
   if (nomeAbreviado = 'symbol')  then Result := 'Symbol' else
   if (nomeAbreviado = 'zapfdingbats')  then Result := 'ZapfDingbats' else
-    Falha('Nome abreviado de fonte inválido: ' + nomeAbreviado);
+    Error('Nome abreviado de fonte inválido: ' + nomeAbreviado);
 end;
 
 end.
+
