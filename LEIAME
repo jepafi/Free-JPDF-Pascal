@@ -1,6 +1,7 @@
-Esta é a Versão 1.0 RC1 da biblioteca Free JPDF Pascal.
+Esta é a Versão 1.0 RC2 da biblioteca Free JPDF Pascal com suporte a imagens.
 
 Recursos:
+- Suporte a Imagens (JPG ou JPEG, PNG, GIF e BMP);
 - Vários formatos de papel;
 - Escolher unidade de medida;
 - Quebra automática de página ou não;
@@ -15,9 +16,5 @@ Recursos:
 - Métodos para desenhar retângulos e linhas;
 - Suporte a Cabeçalhos e Rodapés (para usar é preciso criar uma classe filha, assim como na FPDF em PHP);
 
-Bugs Corrigidos:
-- Troca de fontes entre páginas;
-- Alinhamento a direita e justificado;
-
 Para versão final:
-- Finalizar suporte a imagens;
+- Refinar e organizar o código;
