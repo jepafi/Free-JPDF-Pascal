@@ -15,13 +15,12 @@ var
   t: TStrings;
 begin
   st := '';
-  JPFpdf1 := TJPFpdf.Fpdf('P','mm','A4');
+  JPFpdf1 := TJPFpdf.Fpdf();
   t := TStringList.Create;
   t.LoadFromFile(ExtractFilePath(ParamStr(0))+'20k_c1.txt');
   with JPFpdf1 do begin
     Open;
     AddPage;
-    Image('/home/jean/teste4.png',300,400,250,0);
     SetFont('Times','B',12);
     SetDrawColor(0,0,255);
     SetLineWidth(1);
@@ -49,6 +48,8 @@ begin
     Ln(0);
     SetFont('courier','BI',16);
     Cell(80,10,'Free Jpdf Pascal','0',0,'',0);
+    Image(ExtractFilePath(ParamStr(0))+'imagem1.jpg',40,40,80,75);
+    Image(ExtractFilePath(ParamStr(0))+'imagem2.png',40,120,120,75);
     AddPage();
     SetFont('arial','B',16);
     Cell(40,10,'Free Jpdf Pascal','0',0,'',0);

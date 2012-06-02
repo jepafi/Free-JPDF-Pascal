@@ -15,7 +15,7 @@ uses
 type
     TJPDadosImage = record
       caminho: string;
-      dados: TStream;
+      dados: TMemoryStream;
       tambits: integer;
       n: integer;
       w: double;
@@ -544,9 +544,12 @@ end;
 
 procedure TJPFpdf.Image(ssfile: string; sx: double; sy: double;
   sw: double; sh: double; sstype: string);
+var
+  n,i: integer;
+  img: TJPDadosImage;
+  flag: boolean;
 begin
-  SetLength(Self.ssimages,Length(Self.ssimages)+1);
-   Self.ssimages[0] := GetDadosImagem('/home/jean/teste4.png');
+//   Self.ssimages[0] := GetDadosImagem('/home/jean/teste4.png');
   {
   var
     ms: TMemoryStream;
@@ -564,11 +567,18 @@ begin
   }
 
 	//Put an image on the page
-  {
-	if(not isset(Self.ssimages[ssfile])) then
+  flag := false;
+	if (Length(Self.ssimages) > 0) then
+    for i := 0 to Length(Self.ssimages)-1 do begin
+      if (Self.ssimages[i].caminho = ssfile) then begin
+        flag := true;
+        break;
+      end;
+    end;
+	if not(flag) then
 	begin
 		//First use of image, get info
-		if(sstype = '') then
+{		if(sstype = '') then
 		begin
 			sspos := strrpos(ssfile,'.');
 			if(not sspos) then
@@ -584,19 +594,24 @@ begin
 			ssinfo := _parsepng(ssfile);
 		else
 			Self.ssError('Unsupported image file type: ' + sstype);
-		set_magic_quotes_runtime(ssmqr);
-		ssinfo['n'] := count(Self.ssimages)+1;
-		Self.ssimages[ssfile] := ssinfo;
+		set_magic_quotes_runtime(ssmqr);}
+    SetLength(Self.ssimages,Length(Self.ssimages)+1);
+    Self.ssimages[Length(Self.ssimages)-1].dados := TMemoryStream.Create;
+    Self.ssimages[Length(Self.ssimages)-1] := GetDadosImagem(ssfile);
+//    Self.ssimages[Length(Self.ssimages)-1].dados.LoadFromFile('/home/jean/tempconv.jpg');
+		Self.ssimages[Length(Self.ssimages)-1].n := Length(Self.ssimages);
+		Self.ssimages[Length(Self.ssimages)-1].caminho :=  ssfile;
 	end
 	else
-		ssinfo := Self.ssimages[ssfile];
+		//img := Self.ssimages[i];
 	//Automatic width or height calculus
 	if(sw = 0) then
-		sw := round(sh*ssinfo['w']/ssinfo['h'],2);
+		//sw := round(sh * img.w / img.h, 2);
+  	sw := StrToFloat(FloatToStrF((sh * img.w / img.h), ffNumber, 14, 2));
 	if(sh = 0) then
-		sh := round(sw*ssinfo['h']/ssinfo['w'],2);
-	_out('q ' + sw + ' 0 0 ' + sh + ' ' + sx + ' -' + (sy+sh) + ' cm /I' + ssinfo['n'] + ' Do Q');
-  }
+		//sh := round(sw * img.h / img.w, 2);
+  	sh := StrToFloat(FloatToStrF((sw * img.h / img.w), ffNumber, 14, 2));
+	_out('q ' + FloatToStr(sw) + ' 0 0 ' + FloatToStr(sh) + ' ' + FloatToStr(sx) + ' -' + FloatToStr(sy + sh) + ' cm /I' + IntToStr(Length(Self.ssimages)) + ' Do Q');
 end;
 
 procedure TJPFpdf.Cell(sw: double; sh: double; sstxt: string;
@@ -1002,7 +1017,7 @@ end;
 
 procedure TJPFpdf._enddoc;
 var
-  vnb, vn, vo, vnbpal,vi, vnf,vu: integer;
+  vnb, vn, vo, vnbpal,vi, vnf,vu,vni: integer;
   vwPt, vhPt: double;
   vfilter, vkids, vtrns, vp, vname: string;
 begin
@@ -1032,10 +1047,8 @@ begin
 		_newobj();
 		_out('<</Type /Page');
 		_out('/Parent 1 0 R');
-// RESOLVER
 		if(Self.ssOrientationChanges[vn]) then
 			_out('/MediaBox [0 0 ' + FloatToStr(vhPt) + ' ' + FloatToStr(vwPt) + ']');
-// ---------------------
 		_out('/Resources 2 0 R');
 		_out('/Contents ' + IntToStr(Self.ssn + 1) + ' 0 R>>');
 		_out('endobj');
@@ -1063,37 +1076,41 @@ begin
 		_out('endobj');
 	end;
 	//Images
-{	vni := Self.ssn;
-	reset(Self.ssimages);
-	while(list(vfile,vinfo) = each(Self.ssimages)) do
+	vni := Self.ssn;
+//	reset(Self.ssimages);
+//	while(list(vfile,vinfo) = each(Self.ssimages)) do
+	for vu := 0 to Length(Self.ssimages) - 1 do
 	begin
 		_newobj();
 		_out('<</Type /XObject');
 		_out('/Subtype /Image');
-		_out('/Width ' + vinfo['w']);
-		_out('/Height ' + vinfo['h']);
-		if(vinfo['cs'] = 'Indexed') then
+		_out('/Width ' + FloatToStr(Self.ssimages[vu].w));
+		_out('/Height ' + FloatToStr(Self.ssimages[vu].h));
+		{if(vinfo['cs'] = 'Indexed') then
 			_out('/ColorSpace [/Indexed /DeviceRGB ' + (strlen(vinfo['pal'])/3-1) + ' ' + (Self.ssn+1) + ' 0 R]');
-		else
-			_out('/ColorSpace /' + vinfo['cs']);
-		_out('/BitsPerComponent ' + vinfo['bpc']);
-		_out('/Filter /' + vinfo['f']);
-		if(isset(vinfo['parms'])) then
-			_out(vinfo['parms']);
-		if(isset(vinfo['trns']) and is_array(vinfo['trns'])) then
+		else}
+			_out('/ColorSpace /' + Self.ssimages[vu].cs);
+		_out('/BitsPerComponent ' + IntToStr(Self.ssimages[vu].bpc));
+		_out('/Filter /' + Self.ssimages[vu].f);
+		{if(isset(vinfo['parms'])) then
+			_out(vinfo['parms']);}
+		{if(isset(vinfo['trns']) and is_array(vinfo['trns'])) then
 		begin
 			vtrns := '';
 			for(vi := 0;vi<count(vinfo['trns']);vi++) do
 				vtrns  +=  vinfo['trns'][vi] + ' ' + vinfo['trns'][vi] + ' ';
 			_out('/Mask [' + vtrns + ']');
-		end;
-		_out('/Length ' + strlen(vinfo['data']) + '>>');
+		end;}
+
+    _out('/Length ' + IntToStr(Self.ssimages[vu].dados.Size) + '>>');
 		_out('stream');
-		_out(vinfo['data']);
-		_out('endstream');
+		//_out(vinfo['data']);
+    Self.ssimages[vu].dados.Position := 0;
+    Self.ssbuffer.CopyFrom(Self.ssimages[vu].dados,Self.ssimages[vu].dados.Size);
+		_out(#10+'endstream');
 		_out('endobj');
 		//Palette
-		if(vinfo['cs'] = 'Indexed') then
+		{if(vinfo['cs'] = 'Indexed') then
 		begin
 			_newobj();
 			_out('<</Length ' + strlen(vinfo['pal']) + '>>');
@@ -1101,8 +1118,8 @@ begin
 			_out(vinfo['pal']);
 			_out('endstream');
 			_out('endobj');
-		end;
-	end;  }
+		end; }
+	end;
 	//Pages root
 	Self.ssoffsets[1] := Self.ssbuffer.Size;
 	_out('1 0 obj');
@@ -1125,19 +1142,20 @@ begin
 	for vi := 1 to Length(Self.ssfonts) do
 		_out('/F' + IntToStr(vi) + ' ' + IntToStr(vnf + vi) + ' 0 R');
 	_out('>>');
-{	if(count(Self.ssimages)) then
+	if(Length(Self.ssimages) > 0) then
 	begin
 		_out('/XObject <<');
 		vnbpal := 0;
-		reset(Self.ssimages);
-		while(list(,vinfo) = each(Self.ssimages)) do
+//	reset(Self.ssimages);
+//		while(list(,vinfo) = each(Self.ssimages)) do
+    for vu := 0 to Length(Self.ssimages) - 1 do
 		begin
-			_out('/I' + vinfo['n'] + ' ' + (vni+vinfo['n']+vnbpal) + ' 0 R');
-			if(vinfo['cs'] = 'Indexed') then
-				vnbpal++;
+			_out('/I' + IntToStr(Self.ssimages[vu].n) + ' ' + IntToStr(vni + Self.ssimages[vu].n + vnbpal) + ' 0 R');
+			if(Self.ssimages[vu].cs = 'Indexed') then
+				vnbpal := vnbpal + 1;
 		end;
 		_out('>>');
-	end; }
+	end;
 	_out('>>');
 	_out('endobj');
 	//Info
@@ -1380,7 +1398,7 @@ begin
   SetLength(Self.ssoffsets, 64000000);
   Self.ssstate := 0;
   //SetLength(Self.ssfonts, 14);
-  SetLength(Self.ssimages, 2);
+//  SetLength(Self.ssimages, 2);
   Self.ssInFooter := False;
   Self.ssFontFamily := '';
   Self.ssFontStyle := '';
@@ -1592,16 +1610,31 @@ begin
   jw := TFPWriterJPEG.Create;
   im.LoadFromFile(imgFile,ir);
   Result.dados := TMemoryStream.Create;
+//  im.SaveToFile('/home/jean/tempconv.jpg',jw);
   im.SaveToStream(Result.dados,jw);
-  if (jw.GrayScale) then Result.cs := 'GrayScale';
+//  Result.dados.lo;
+  if (jw.GrayScale) then Result.cs := 'DeviceGray' else Result.cs := 'DeviceRGB';
   Result.w := im.Width;
   Result.h := im.Height;
+  Result.bpc := 8;
+  Result.f := 'DCTDecode';
   finally
     ir.Free;
     im.Free;
     jw.Free;
   end;
-
+{		$colspace='DeviceRGB';
+	elseif($a['channels']==4)
+		$colspace='DeviceCMYK';
+	else
+		$colspace='DeviceGray';
+	$bpc=isset($a['bits']) ? $a['bits'] : 8;
+	//Read whole file
+	$f=fopen($file,'rb');
+	$data=fread($f,filesize($file));
+	fclose($f);
+	return array('w'=>$a[0],'h'=>$a[1],'cs'=>$colspace,'bpc'=>$bpc,'f'=>'DCTDecode','data'=>$data);
+}
 
 end;
 
