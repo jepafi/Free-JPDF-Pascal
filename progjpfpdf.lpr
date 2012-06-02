@@ -50,6 +50,7 @@ begin
     Cell(80,10,'Free Jpdf Pascal','0',0,'',0);
     Image(ExtractFilePath(ParamStr(0))+'imagem1.jpg',40,40,80,75);
     Image(ExtractFilePath(ParamStr(0))+'imagem2.png',40,120,120,75);
+    Image(ExtractFilePath(ParamStr(0))+'imagem3.png',40,200,100,60);
     AddPage();
     SetFont('arial','B',16);
     Cell(40,10,'Free Jpdf Pascal','0',0,'',0);
