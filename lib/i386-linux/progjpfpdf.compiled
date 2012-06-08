@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<CONFIG>
-  <Compiler Value="/usr/bin/fpc" Date="1328361659"/>
-  <Params Value=" -MObjFPC -Scghi -O1 -Xs -XX -vewnhi -l -Fi/home/jean/Free_JPDF_Pascal/lib/i386-linux -Fu/home/jean/Free_JPDF_Pascal/ -FU/home/jean/Free_JPDF_Pascal/lib/i386-linux/ progjpfpdf.lpr"/>
-</CONFIG>

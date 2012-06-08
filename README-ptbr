@@ -1,0 +1,33 @@
+Esta é a Versão 1.0 estável da biblioteca "Free JPDF Pascal".
+
+Recursos:
+- Suporte a Imagens (JPG ou JPEG, PNG, GIF e BMP);
+- Suporte as principais fontes;
+- Vários formatos de papel;
+- Escolher unidade de medida;
+- Quebra automática de página ou não;
+- Texto com todos os tipos de alinhamentos;
+- Poder carregar um arquivo de texto que será incluído no PDF, com quebra de linhas e páginas automáticos (justificado, esquerda, direita ou centro);
+- Escrever texto livre (em qualquer posição na folha);
+- Criar tabelas com o método Cell;
+- Suporte a cor de linha, fundo e texto;
+- Suporte a linhas de bordas;
+- Possibilidade de trocar a orientação (retrato ou paisagem) das páginas no mesmo documento;
+- Suporte a compactação (gera PDF menores);
+- Métodos para desenhar retângulos e linhas;
+- Suporte a Cabeçalhos e Rodapés (para usar é preciso criar uma classe filha, assim como na FPDF em PHP);
+
+Novidades nesta versão:
+- O método fpdf mudou para Create;
+- Não é mais necessário chamar o método Open depois do Create;
+- Uso enumeradores em vários métodos (Gilson Nunes);
+- Resolvido problema com o ponto decimal no Windows (Gilson Nunes);
+- Reduzido o número de IF's (vindos da FPDF) devido ao uso de enumeradores;
+- Alguns métodos internos foram removidos, pois se tornaram desnecessários;
+- Uso de nomes de variáveis mais legíveis;
+- Suporte a cores padrão (cBlack, cSilver, cRed, etc);
+- Suporte a texto sublinhado (veja exemplo);
+- Novo método SetRightMargin;
+- Novo método SetUnderline;
+- Novo método Writer (mesmo que o Write da FPDF), permite alterar o estilo da fonte em um mesmo parágrafo (só alinhamento à esquerda);
+- Novo método Code25 para criar códigos de barras para boletos bancários (veja exemplo);

@@ -1,0 +1,33 @@
+This is version 1.0 Stable of the library "Free JPDF Pascal".
+
+resources:
+- Support Image (JPG or JPEG, PNG, GIF and BMP);
+- Support the main fonts;
+- Various sizes of paper;
+- Select unit of measure;
+- Wrapping page or not;
+- Text with all types of alignment;
+- Power load a text file that is included in the PDF, with line breaks and page automatic (justified, left, right or center);
+- Write free text (in any position on the sheet);
+- Create tables with the Cell Method;
+- Support for line color, background and text;
+- Support for border line;
+- Possibility to change the orientation (portrait or landscape) of the pages in the same document;
+- Support compression (creates smaller PDF);
+- Methods to draw rectangles and lines;
+- Supports Headers and Footers (to use you need to create a child class, as well as the FPDF PHP);
+
+New in this version:
+- The method fpdf moved to Create;
+- No need to call the Open after Create;
+- Use enumerators in various methods (Gilson Nunes);
+- Solved problem with the decimal point in Windows (Gilson Nunes);
+- Reduced the number of IF's (from the FPDF) due to the use of enumerators;
+- Some internal methods were removed because it became unnecessary;
+- Use variable names more readable;
+- Support for standard colors (cBlack, cSilver, cred, etc.);
+- Support underlined text (see example);
+- New method SetRightMargin;
+- New method SetUnderline;
+- New method Writer (Write the same as FPDF), lets you change the font style in the same paragraph (only left alignment);
+- New method to create Code25 barcodes for bank bills (see example);
