@@ -1,3 +1,23 @@
+{
+
+Free JPDF Pascal
+
+Based on the library FPDF written in PHP by Olivier PLATHEY and
+the Code25 method was based on PHP script created by Matthias Lau
+
+Author: Jean Patrick - jpsoft-sac-pa@hotmail.com - www.jpsoft.com.br
+
+Contribution: Gilson Nunes - Use of enumerators and resolved bug related to decimal point.
+
+Date: 08/06/2012
+
+Version: 1.0 Stable
+
+License: You can freely use and modify this library for commercial purposes or not,
+         provided you keep the credits to the author and his contributors.
+
+}
+
 unit libjpfpdf;
 
 {$mode objfpc}{$H+}
@@ -99,7 +119,7 @@ type
     JFONTFAMILY: array[TPDFFontFamily] of shortstring = ('Courier','Helvetica','Times','Symbol','Zapfdingbats');
     JFONTSTYLE: array[TPDFFontStyle] of shortstring = ('','-Bold','-Oblique','-BoldOblique');
     JDISPLAYMODE: array[TPDFDisplayMode] of shortstring = ('fullpage','fullwidth','real','default','zoom');
-    FREE_JPDF_PASCAL_VERSION = '1.2';
+    FREE_JPDF_PASCAL_VERSION = '1.0 Stable';
   var
     page: integer;               // current page number
     numObj: integer;             // current object number
