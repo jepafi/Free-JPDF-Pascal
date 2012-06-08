@@ -63,6 +63,7 @@ begin
     SetFont(ffTimes,fsNormal,16,false);
     Writer(10,'you can take a peek at the developer versions.');
     Output(GetUserDir + '/JPFpdfTESTE.pdf');
+    Free;
   end;
 end.
 
