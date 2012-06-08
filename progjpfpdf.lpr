@@ -44,7 +44,6 @@ begin
     AddPage;
     SetFont(ffHelvetica,fsBold,16);
     Cell(60,10,'Free Jpdf Pascal','1',0,'C',0);
-   // Ln();
     Cell(60,10,'Free Jpdf Pascal','1',0,'C',0);
     Image(ExtractFilePath(ParamStr(0))+'image1.jpg',40,40,80,75);
     Image(ExtractFilePath(ParamStr(0))+'image2.png',40,120,120,75);
