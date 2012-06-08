@@ -13,258 +13,284 @@ uses
   FPWriteJPEG, FPReadJPEG;
 
 type
-    TJPDadosImage = record
-      caminho: string;
-      dados: TMemoryStream;
-      tambits: integer;
-      n: integer;
-      w: double;
-      h: double;
-      cs: string;
-      bpc: integer;
-      f: string;
-      parms: string;
-      pal: string;
-      trns: string;
-      end;
+  TJPImageInfo = record
+    filePath: string;
+    imgSource: TMemoryStream;
+    sizebits: integer;
+    n: integer;
+    w: double;
+    h: double;
+    cs: string;
+    bpc: integer;
+    f: string;
+    parms: string;
+    pal: string;
+    trns: string;
+  end;
 
-    TJPInfoJPEG = record
-      width: double;
-      height: double;
-      syscor: string;
-      bitscor: integer;
-     end;
+  TJPFont = record
+    name: string;
+    number: integer;
+  end;
 
-    TJPFone = record
-      nome: string;
-      numero: integer;
-    end;
-
-    TJPCor = (jpBlack,jpSilver,jpGray);
+  TJPColor = (cBlack,cSilver,cGray,cWhite,cMaroon,cRed,cPurple,cFuchsia,
+              cGreen,cLime,cOlive,cYellow,cNavy,cBlue,cTeal,cAqua);
+  TPDFOrientation = (poPortrait, poLandscape, poDefault);
+  TPDFUnit = (puPT, puMM, puCM, puIN);
+  TPDFPageFormat = (pfA3, pfA4, pfA5, pfLetter, pfLegal);
+  TPDFFontFamily = (ffCourier, ffHelvetica, ffTimes, ffSymbol, ffZapfdingbats);
+  TPDFFontStyle = (fsNormal, fsBold, fsItalic, fsBoldItalic);
+  TPDFDisplayMode = (dmFullPage,dmFullWidth,dmReal,dmDefault,dmZoom);
 
   { TJPFpdf }
 
   TJPFpdf = class
   private
-
+    function FontWasUsed(font: string): boolean;
+    function GetInfoImage(imgFile: string): TJPImageInfo;
+    function GzCompress(StrIn: string; CompLevel: TCompressionLevel = clMax): string;
+    function GzDecompress(StrIn: string): string;
+    function _dounderline(vX, vY: double; vText: string): string;
+    procedure _begindoc;
+    procedure _enddoc;
+    procedure _beginpage(orientation: string);
+    procedure _endpage;
+    procedure _newobj;
+    function _setfont(fFamily: TPDFFontFamily; fStyle: TPDFFontStyle; fSize: double): boolean;
+    function _setfontsize(fSize: double): boolean;
+  protected
+    function FloatToStr(Value: Double): String;
+    function _escape(sText: string): string;
+    procedure _out(sText: string);
   public
   const
     {$i inc_fontes.inc}
-    FPDF_VERSION = '1.41';
+    TPDFFormatSetings:  TFormatSettings = (
+      CurrencyFormat: 1;
+      NegCurrFormat: 5;
+      ThousandSeparator: ',';
+      DecimalSeparator: '.';
+      CurrencyDecimals: 2;
+      DateSeparator: '-';
+      TimeSeparator: ':';
+      ListSeparator: ',';
+      CurrencyString: '$';
+      ShortDateFormat: 'd/m/y';
+      LongDateFormat: 'dd" "mmmm" "yyyy';
+      TimeAMString: 'AM';
+      TimePMString: 'PM';
+      ShortTimeFormat: 'hh:nn';
+      LongTimeFormat: 'hh:nn:ss';
+      ShortMonthNames: ('Jan','Feb','Mar','Apr','May','Jun',
+                        'Jul','Aug','Sep','Oct','Nov','Dec');
+      LongMonthNames: ('January','February','March','April','May','June',
+                       'July','August','September','October','November','December');
+      ShortDayNames: ('Sun','Mon','Tue','Wed','Thu','Fri','Sat');
+      LongDayNames:  ('Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday');
+      TwoDigitYearCenturyWindow: 50;
+    );
+    JORIENTATION: array[TPDFOrientation] of char = ('P','L',#0);
+    JUNIT: array[TPDFUnit] of double = (1,72/25.4,72/2.54,72);
+    JFORMAT_W: array[TPDFPageFormat] of double = (841.89,595.28,420.94,612,612);
+    JFORMAT_H: array[TPDFPageFormat] of double = (1190.55,841.89,595.28,792,1008);
+    JCOLOR_R: array[TJPColor] of SmallInt = (0,192,128,255,128,255,128,255,  0,  0,128,255,  0,  0,  0,  0);
+    JCOLOR_G: array[TJPColor] of SmallInt = (0,192,128,255,  0,  0,  0,  0,128,255,128,255,  0,  0,128,255);
+    JCOLOR_B: array[TJPColor] of SmallInt = (0,192,128,255,  0,  0,128,255,  0,  0,  0,  0,128,255,128,255);
+    JFONTFAMILY: array[TPDFFontFamily] of shortstring = ('Courier','Helvetica','Times','Symbol','Zapfdingbats');
+    JFONTSTYLE: array[TPDFFontStyle] of shortstring = ('','-Bold','-Oblique','-BoldOblique');
+    JDISPLAYMODE: array[TPDFDisplayMode] of shortstring = ('fullpage','fullwidth','real','default','zoom');
+    FREE_JPDF_PASCAL_VERSION = '1.2';
   var
-    sspage: integer;               // current page number
-    ssn: integer;                  // current object number
-    ssoffsets: array of integer;            // array of object offsets
-    ssbuffer: TMemoryStream;             // buffer holding in-memory PDF
-    sspages: array of string;              // array containing pages
-    ssstate: integer;              // current document state
-    sscompress: boolean;           // compression flag
-    ssDefOrientation: string;     // default orientation
-    ssCurOrientation: string;     // current orientation
-    ssOrientationChanges: array of boolean;
-    // array indicating orientation changes
-    ssfwPt, ssfhPt: double;          // dimensions of page format in points
-    ssfw, ssfh: double;              // dimensions of page format in user unit
-    sswPt, sshPt: double;          // current dimensions of page in points
-    ssw, ssh: double;              // current dimensions of page in user unit
-    sslMargin: double;            // left margin
-    sstMargin: double;            // top margin
-    ssbMargin: double;            // page break margin
-    sscMargin: double;            // cell margin
-    ssx, ssy: double;  //////////////// mudou de int para dou
-    // current position in user unit for cell positionning
-    sslasth: double;              // height of last cell printed
-    ssk: double;                  // scale factor (number of points in user unit)
-    ssLineWidth: double;          // line width in user unit
-    ssfontnames: array of string;   // array of Postscript (Type1) font names
-    ssfonts: array of TJPFone;              // array of used fonts
-    ssimages: array of TJPDadosImage;             // array of used images
-    ssFontFamily: string;         // current font family
-    ssFontStyle: string;          // current font style
-    ssFontSizePt: double;         // current font size in points
-    ssFontSize: double;           // current font size in user unit
-    ssDrawColor: string;          // commands for drawing color
-    ssFillColor: string;          // commands for filling color
-    ssTextColor: string;          // commands for text color
-    ssColorFlag: boolean;
-    // indicates whether fill and text colors are different
-    ssws: double;                 // word spacing
-    ssAutoPageBreak: boolean;      // automatic page breaking
-    ssPageBreakTrigger: double;   // threshold used to trigger page breaks
-    ssInFooter: boolean;           // flag set when processing footer
-    ssDisplayMode: string;           // display mode
-    sstitle: string;              // title
-    sssubject: string;            // subject
-    ssauthor: string;             // author
-    sskeywords: string;           // keywords
-    sscreator: string;            // creator
-    ssAliasNbPages: string;       // alias for total number of pages
-    DefDecimal: char;             // guarda o separador decimal default
-    //    número da font e caractere
-    ssfpdf_charwidths: array[0..13] of array [0..255] of integer;
-    // widths fonts
-
-    // substitui gzcompress
-    function Compress(StrIn: string; CompLevel: TCompressionLevel = clMax): string;
-    // substitui gzuncompress
-    function Decompress(StrIn: string): string;
-    constructor Fpdf(ssorientation: string = 'p'; ssunit: string = 'mm';
-      ssformat: string = 'a4');
-    procedure SetDecimal(Decimal: char = 'd');
-    procedure SetMargins(ssleft: double; sstop: double);
-    procedure SetLeftMargin(ssmargin: double);
-    procedure SetAutoPageBreak(ssauto: boolean; ssmargin: double = 0.0);
-    procedure SetDisplayMode(ssmode: string; ssz: integer = 100);
+    page: integer;               // current page number
+    numObj: integer;             // current object number
+    offsets: array of integer;   // array of object offsets
+    buffer: TMemoryStream;       // buffer holding in-memory PDF
+    pages: array of string;      // array containing pages
+    state: integer;              // current document state
+    compress: boolean;           // compression flag
+    DefOrientation: TPDFOrientation;      // default orientation
+    CurOrientation: TPDFOrientation;      // current orientation
+    OrientationChanges: array of boolean;    // array indicating orientation changes
+    fwPt, fhPt: double;           // dimensions of page format in points
+    fw, fh: double;               // dimensions of page format in user unit
+    wPt, hPt: double;             // current dimensions of page in points
+    dw, dh: double;               // current dimensions of page in user unit
+    lMargin: double;            // left margin
+    tMargin: double;            // top margin
+    rMargin: double;            // right margin
+    bMargin: double;            // page break margin
+    cMargin: double;            // cell margin
+    cpX, cpY: double;             // current position in user unit for cell positionning
+    hLasth: double;              // height of last cell printed
+    pgK: double;                  // scale factor (number of points in user unit)
+    pLineWidth: double;          // line width in user unit
+    pFonts: array of TJPFont;          // array of used fonts
+    pImages: array of TJPImageInfo;    // array of used images
+    cFontFamily: TPDFFontFamily;       // current font family
+    cFontStyle: TPDFFontStyle;         // current font style
+    cFontSizePt: double;         // current font size in points
+    cFontSize: double;           // current font size in user unit
+    pUnderlineFlag: boolean;      // underlining flag
+    pDrawColor: string;          // commands for drawing color
+    pFillColor: string;          // commands for filling color
+    pTextColor: string;          // commands for text color
+    pColorFlag: boolean;         // indicates whether fill and text colors are different
+    pgWs: double;                 // word spacing
+    AutoPageBreak: boolean;     // automatic page breaking
+    PageBreakTrigger: double;   // threshold used to trigger page breaks
+    InFooter: boolean;          // flag set when processing footer
+    DocDisplayMode: string;        // display mode
+    DocTitle: string;              // title
+    DocSubject: string;            // subject
+    DocAuthor: string;             // author
+    DocKeywords: string;           // keywords
+    DocCreator: string;            // creator
+    DocAliasNbPages: string;       // alias for total number of pages
+    Jpdf_charwidths: array[TPDFFontFamily] of array[TPDFFontStyle] of array [0..255] of integer; // widths of the characters of fonts
+    constructor Create(orientation: TPDFOrientation = poPortrait; pageUnit: TPDFUnit = puMM;
+      pageFormat: TPDFPageFormat = pfA4);
+    procedure SetMargins(marginLeft: double; marginTop: double; marginRight: double = -1);
+    procedure SetLeftMargin(marginLeft: double);
+    procedure SetRightMargin(marginRight: double);
+    procedure SetAutoPageBreak(vAuto: boolean; vMargin: double = 0.0);
+    procedure SetDisplayMode(mode: TPDFDisplayMode; zoom: smallint = 100);
     procedure SetCompression(scompress: boolean);
-    procedure SetTitle(stitle: string);
+    procedure SetTitle(vTitle: string);
     procedure SetSubject(ssubject: string);
-    procedure SetAuthor(sauthor: string);
-    procedure SetKeywords(skeywords: string);
-    procedure SetCreator(screator: string);
-    procedure AliasNbPages(ssalias: string = '/{nb/}');
-    procedure Error(ssmsg: string);
+    procedure SetAuthor(vAuthor: string);
+    procedure SetKeywords(vKeywords: string);
+    procedure SetCreator(vCreator: string);
+    procedure AliasNbPages(vAlias: string = '/{nb/}');
+    procedure Error(TextMsg: string);
     procedure Open;
     procedure Close;
-    procedure AddPage(ssorientation: string = '');
+    procedure AddPage(Orientation: TPDFOrientation = poDefault);
     procedure Header;
     procedure Footer;
     function PageNo: integer;
-    procedure SetDrawColor(ssr: integer; ssg: integer = -1; ssb: integer = -1);
-    procedure SetFillColor(ssr: integer; ssg: integer = -1; ssb: integer = -1);
-    procedure SetTextColor(ssr: integer; ssg: integer = -1; ssb: integer = -1);
-    procedure SetTextColor(cor: TJPCor);
-    function GetStringWidth(sss: string): double;
-    procedure SetLineWidth(sswidth: double);
-    procedure Line(ssx1, ssy1, ssx2, ssy2: double);
-    procedure Rect(sx, sy, sw, sh: double; ssstyle: string = '');
-    procedure SetFont(sfamily: string; sstyle: string = ''; ssize: double = 0.0);
-    procedure SetFontSize(sssize: double);
-    procedure Text(sx, sy: double; sstxt: string);
+    procedure SetDrawColor(ValR: integer; ValG: integer = -1; ValB: integer = -1);
+    procedure SetFillColor(ValR: integer; ValG: integer = -1; ValB: integer = -1);
+    procedure SetTextColor(ValR: integer; ValG: integer = -1; ValB: integer = -1);
+    procedure SetTextColor(color: TJPColor);
+    procedure SetFillColor(color: TJPColor);
+    procedure SetDrawColor(color: TJPColor);
+    function GetStringWidth(vText: string): double;
+    procedure SetLineWidth(vWidth: double);
+    procedure Line(vX1, vY1, vX2, vY2: double);
+    procedure Rect(vX, vY, vWidht, vHeight: double; vStyle: string = '');
+    procedure SetFont(fFamily:  TPDFFontFamily; fStyle: TPDFFontStyle; fSize: double = 0.0; fUnderline: boolean = False);
+    procedure SetFont(fFamily:  TPDFFontFamily; fSize: double = 0.0; fUnderline: boolean = False);
+    procedure SetFontSize(fSize: double; fUnderline: boolean = False);
+    procedure SetUnderline(fUnderline: boolean = False);
+    procedure Text(vX, vY: double; vText: string);
+    procedure Writer(vHeight: double; vText: string);
     function AcceptPageBreak: boolean;
-    procedure Cell(sw: double; sh: double = 0.0; sstxt: string = ''; // sw de int->dou e sh de int->dou
-      ssborder: string = '0'; ssln: integer = 0; ssalign: string = '';
-      ssfill: integer = 0);
-    procedure MultiCell(sw, sh: double; sstxt: string; ssborder: string = '0';
-      ssalign: string = 'J'; ssfill: integer = 0);
-    procedure Image(ssfile: string; sx: double; sy: double;
-      sw: double; sh: double = 0.0; sstype: string = '');
-    procedure Ln(sh: double = 0);
+    procedure Cell(vWidth: double; vHeight: double = 0.0; vText: string = '';
+      vBorder: string = '0'; vLineBreak: integer = 0; vAlign: string = '';
+      vFill: integer = 0);
+    procedure MultiCell(vWidth, vHeight: double; vText: string; vBorder: string = '0';
+      vAlign: string = 'J'; vFill: integer = 0);
+    procedure Image(vFile: string; vX: double; vY: double; vWidth: double;
+      vHeight: double = 0.0);
+    procedure Ln(vHeight: double = 0);
     function GetX: double;
-    procedure SetX(sx: double);
+    procedure SetX(vX: double);
     function GetY: double;
-    procedure SetY(sy: double);
-    procedure SetXY(sx, sy: double);  // tudo mudou de int para dou
-    procedure Output(ssfile: string = ''; ssdownload: boolean = False);
-    function ValidaFonte(fonte: string): boolean;
-    function FonteFoiUsada(fonte: string): boolean;
-    function DevolveNomeFone(nomeAbreviado: string): string;
-    function GetDadosImagem(imgFile: string): TJPDadosImage;
-
-    {***************************************************************************
-    *                                                                           *
-    *                              Private methods                              *
-    *                                                                           *
-    ***************************************************************************}
-    procedure _begindoc;
-    procedure _enddoc;
-    procedure _beginpage(ssorientation: string);
-    procedure _endpage;
-    procedure _newobj;
-    function _setfont(ssfamily: string; ssstyle: string; sssize: double): boolean;
-    function _setfontsize(sssize: double): boolean;
-    function _parsejpg(ssfile: string): TMemoryStream;
-    function _parsepng(ssfile: string): TMemoryStream;
-    function _freadint(ssf: string): integer;
-    function _escape(sss: string): string;
-    procedure _out(sss: string);
-
-    // =============================================================
-
+    procedure SetY(vY: double);
+    procedure SetXY(vX, vY: double);
+    procedure Output(vFile: string = ''; vDownload: boolean = False);
+    procedure Code25(vXPos, vYPos: double; vTextCode: string; vBaseWidth: double = 1; vHeight: double = 10);
   end;
 
 implementation
 
 { TJPFpdf }
 
-procedure TJPFpdf.SetMargins(ssleft: double; sstop: double);
+procedure TJPFpdf.SetMargins(marginLeft: double; marginTop: double; marginRight: double);
 begin
   //Set left and top margins
-  Self.sslMargin := ssleft;
-  Self.sstMargin := sstop;
+  Self.lMargin := marginLeft;
+  Self.tMargin := marginTop;
+  if (marginRight = -1) then
+    Self.rMargin := Self.lMargin else
+      Self.rMargin := marginRight;
 end;
 
-procedure TJPFpdf.SetLeftMargin(ssmargin: double);
+procedure TJPFpdf.SetLeftMargin(marginLeft: double);
 begin
   //Set left margin
-  Self.sslMargin := ssmargin;
+	Self.lMargin := marginLeft;
+	if((Self.page > 0) and (Self.cpX < marginLeft)) then
+		Self.cpX := marginLeft;
 end;
 
-procedure TJPFpdf.SetAutoPageBreak(ssauto: boolean; ssmargin: double);
+procedure TJPFpdf.SetRightMargin(marginRight: double);
+begin
+	//Set right margin
+	Self.rMargin := marginRight;
+end;
+
+procedure TJPFpdf.SetAutoPageBreak(vAuto: boolean; vMargin: double);
 begin
   //Set auto page break mode and triggering margin
-  Self.ssAutoPageBreak := ssauto;
-  Self.ssbMargin := ssmargin;
-  Self.ssPageBreakTrigger := Self.ssh - ssmargin;
+  Self.AutoPageBreak := vAuto;
+  Self.bMargin := vMargin;
+  Self.PageBreakTrigger := Self.dh - vMargin;
 end;
 
-procedure TJPFpdf.SetDisplayMode(ssmode: string; ssz: integer);
+procedure TJPFpdf.SetDisplayMode(mode: TPDFDisplayMode; zoom: smallint);
 begin
   //Set display mode in viewer
-  if ((ssmode = 'fullpage') or (ssmode = 'fullwidth') or (ssmode = 'real') or
-    (ssmode = 'default')) then
-    Self.ssDisplayMode := ssmode
-  else if (ssmode = 'zoom') then
-    Self.ssDisplayMode := IntToStr(ssz)
-  else
-    Error('Incorrect display mode: ' + ssmode);
+  if (mode = dmZoom) then Self.DocDisplayMode := IntToStr(zoom) else
+    Self.DocDisplayMode := JDISPLAYMODE[mode];
 end;
 
 procedure TJPFpdf.SetCompression(scompress: boolean);
 begin
   //Set page compression
-  Self.sscompress := scompress;
+  Self.compress := scompress;
 end;
 
-procedure TJPFpdf.SetTitle(stitle: string);
+procedure TJPFpdf.SetTitle(vTitle: string);
 begin
   //Title of document
-  Self.sstitle := stitle;
+  Self.DocTitle := vTitle;
 end;
 
 procedure TJPFpdf.SetSubject(ssubject: string);
 begin
   //Subject of document
-  Self.sssubject := ssubject;
+  Self.DocSubject := ssubject;
 end;
 
-procedure TJPFpdf.SetAuthor(sauthor: string);
+procedure TJPFpdf.SetAuthor(vAuthor: string);
 begin
   //Author of document
-  Self.ssauthor := sauthor;
+  Self.DocAuthor := vAuthor;
 end;
 
-procedure TJPFpdf.SetKeywords(skeywords: string);
+procedure TJPFpdf.SetKeywords(vKeywords: string);
 begin
   //Keywords of document
-  Self.sskeywords := skeywords;
+  Self.DocKeywords := vKeywords;
 end;
 
-procedure TJPFpdf.SetCreator(screator: string);
+procedure TJPFpdf.SetCreator(vCreator: string);
 begin
   //Creator of document
-  Self.sscreator := screator;
+  Self.DocCreator := vCreator;
 end;
 
-procedure TJPFpdf.AliasNbPages(ssalias: string);
+procedure TJPFpdf.AliasNbPages(vAlias: string);
 begin
   //Define an alias for total number of pages
-  Self.ssAliasNbPages := ssalias;
+  Self.DocAliasNbPages := vAlias;
 end;
 
-procedure TJPFpdf.Error(ssmsg: string);
+procedure TJPFpdf.Error(TextMsg: string);
 begin
   //Fatal error
-  raise Exception.Create('JPFPDF error: ' + ssmsg);
+  raise Exception.Create('JPFPDF error: ' + TextMsg);
 end;
 
 procedure TJPFpdf.Open;
@@ -276,85 +302,84 @@ end;
 procedure TJPFpdf.Close;
 begin
   //Terminate document
-  if (Self.sspage = 0) then
+  if (Self.page = 0) then
     Error('Document contains no page');
   //Page footer
-  Self.ssInFooter := True;
+  Self.InFooter := True;
   Footer;
-  Self.ssInFooter := False;
+  Self.InFooter := False;
   //Close page
   _endpage;
   //Close document
   _enddoc;
 end;
 
-procedure TJPFpdf.AddPage(ssorientation: string);
+procedure TJPFpdf.AddPage(orientation: TPDFOrientation);
 var
-  vfamily, vstyle, vdc, vfc, vtc: string;
+  vdc, vfc, vtc: string;
+  vfamily: TPDFFontFamily;
+  vstyle:TPDFFontStyle;
   vsize: double;
   vlw: double;
   vcf: boolean;
 begin
   //Start a new page
-  SetDecimal('.');
-  vfamily := Self.ssFontFamily;
-  vstyle := Self.ssFontStyle;
-  vsize := Self.ssFontSizePt;
-  vlw := Self.ssLineWidth;
-  vdc := Self.ssDrawColor;
-  vfc := Self.ssFillColor;
-  vtc := Self.ssTextColor;
-  vcf := Self.ssColorFlag;
-  if (Self.sspage > 0) then
+	if(Self.state = 0) then Self.Open();
+  vfamily := Self.cFontFamily;
+  vstyle := Self.cFontStyle;
+  vsize := Self.cFontSizePt;
+  vlw := Self.pLineWidth;
+  vdc := Self.pDrawColor;
+  vfc := Self.pFillColor;
+  vtc := Self.pTextColor;
+  vcf := Self.pColorFlag;
+  if (Self.page > 0) then
   begin
     //Page footer
-    Self.ssInFooter := True;
+    Self.InFooter := True;
     Footer;
-    Self.ssInFooter := False;
+    Self.InFooter := False;
     //Close page
     _endpage;
   end;
   //Start new page
-  _beginpage(ssorientation);
+  _beginpage(JORIENTATION[orientation]);
   //Set line cap style to square
   _out('2 J');
   //Set line width
   _out(FloatToStr(vlw) + ' w');
   //Set font
-  if (vfamily <> '') then
     SetFont(vfamily, vstyle, vsize);
   //Set colors
   if (vdc <> '0 G') then
     _out(vdc);
   if (vfc <> '0 g') then
     _out(vfc);
-  Self.ssTextColor := vtc;
-  Self.ssColorFlag := vcf;
+  Self.pTextColor := vtc;
+  Self.pColorFlag := vcf;
   //Page header
   Header;
   //Restore line width
-  if (Self.ssLineWidth <> vlw) then
+  if (Self.pLineWidth <> vlw) then
   begin
-    Self.ssLineWidth := vlw;
+    Self.pLineWidth := vlw;
     _out(FloatToStr(vlw) + ' w');
   end;
   //Restore font
-  if (vfamily <> '') then
     SetFont(vfamily, vstyle, vsize);
   //Restore colors
-  if (Self.ssDrawColor <> vdc) then
+  if (Self.pDrawColor <> vdc) then
   begin
-    Self.ssDrawColor := vdc;
+    Self.pDrawColor := vdc;
     _out(vdc);
   end;
-  if (Self.ssFillColor <> vfc) then
+  if (Self.pFillColor <> vfc) then
   begin
-    Self.ssFillColor := vfc;
+    Self.pFillColor := vfc;
     _out(vfc);
   end;
-  Self.ssTextColor := vtc;
-  Self.ssColorFlag := vcf;
-  SetDecimal;
+  Self.pTextColor := vtc;
+  Self.pColorFlag := vcf;
 end;
 
 procedure TJPFpdf.Header;
@@ -370,963 +395,956 @@ end;
 function TJPFpdf.PageNo: integer;
 begin
   //Get current page number
-  Result := Self.sspage;
+  Result := Self.page;
 end;
 
-procedure TJPFpdf.SetDrawColor(ssr: integer; ssg: integer; ssb: integer);
+procedure TJPFpdf.SetDrawColor(ValR: integer; ValG: integer; ValB: integer);
 begin
-  SetDecimal('.');
   //Set color for all stroking operations
-  if (((ssr = 0) and (ssg = 0) and (ssb = 0)) or (ssg = -1)) then
-    Self.ssDrawColor := Copy(FloatToStr(ssr / 255), 0, 5) + ' G'
+  if (((ValR = 0) and (ValG = 0) and (ValB = 0)) or (ValG = -1)) then
+    Self.pDrawColor := Copy(FloatToStr(ValR / 255), 0, 5) + ' G'
   else
-    Self.ssDrawColor := Copy(FloatToStr(ssr / 255), 0, 5) + ' ' +
-      Copy(FloatToStr(ssg / 255), 0, 5) + ' ' +
-      Copy(FloatToStr(ssb / 255), 0, 5) + ' RG';
-  if (Self.sspage > 0) then
-    _out(Self.ssDrawColor);
-  SetDecimal;
+    Self.pDrawColor := Copy(FloatToStr(ValR / 255), 0, 5) + ' ' +
+      Copy(FloatToStr(ValG / 255), 0, 5) + ' ' +
+      Copy(FloatToStr(ValB / 255), 0, 5) + ' RG';
+  if (Self.page > 0) then
+    _out(Self.pDrawColor);
 end;
 
-procedure TJPFpdf.SetFillColor(ssr: integer; ssg: integer; ssb: integer);
+procedure TJPFpdf.SetFillColor(ValR: integer; ValG: integer; ValB: integer);
 begin
-  SetDecimal('.');
   //Set color for all filling operations
-  if (((ssr = 0) and (ssg = 0) and (ssb = 0)) or (ssg = -1)) then
-    Self.ssFillColor := Copy(FloatToStr(ssr / 255), 0, 5) + ' g'
+  if (((ValR = 0) and (ValG = 0) and (ValB = 0)) or (ValG = -1)) then
+    Self.pFillColor := Copy(FloatToStr(ValR / 255), 0, 5) + ' g'
   else
-    Self.ssFillColor := Copy(FloatToStr(ssr / 255), 0, 5) + ' ' +
-      Copy(FloatToStr(ssg / 255), 0, 5) + ' ' +
-      Copy(FloatToStr(ssb / 255), 0, 5) + ' rg';
-  Self.ssColorFlag := (Self.ssFillColor <> Self.ssTextColor);
-  if (Self.sspage > 0) then
-    _out(Self.ssFillColor);
-  SetDecimal;
+    Self.pFillColor := Copy(FloatToStr(ValR / 255), 0, 5) + ' ' +
+      Copy(FloatToStr(ValG / 255), 0, 5) + ' ' +
+      Copy(FloatToStr(ValB / 255), 0, 5) + ' rg';
+  Self.pColorFlag := (Self.pFillColor <> Self.pTextColor);
+  if (Self.page > 0) then
+    _out(Self.pFillColor);
 end;
 
-procedure TJPFpdf.SetTextColor(ssr: integer; ssg: integer; ssb: integer);
+procedure TJPFpdf.SetTextColor(ValR: integer; ValG: integer; ValB: integer);
 begin
-  SetDecimal('.');
   //Set color for text
-  if (((ssr = 0) and (ssg = 0) and (ssb = 0)) or (ssg = -1)) then
-    Self.ssTextColor := Copy(FloatToStr(ssr / 255), 0, 5) + ' g'
+  if (((ValR = 0) and (ValG = 0) and (ValB = 0)) or (ValG = -1)) then
+    Self.pTextColor := Copy(FloatToStr(ValR / 255), 0, 5) + ' g'
   else
-    Self.ssTextColor := Copy(FloatToStr(ssr / 255), 0, 5) + ' ' +
-      Copy(FloatToStr(ssg / 255), 0, 5) + ' ' +
-      Copy(FloatToStr(ssb / 255), 0, 5) + ' rg';
-  Self.ssColorFlag := (Self.ssFillColor <> Self.ssTextColor);
-  SetDecimal;
+    Self.pTextColor := Copy(FloatToStr(ValR / 255), 0, 5) + ' ' +
+      Copy(FloatToStr(ValG / 255), 0, 5) + ' ' +
+      Copy(FloatToStr(ValB / 255), 0, 5) + ' rg';
+  Self.pColorFlag := (Self.pFillColor <> Self.pTextColor);
 end;
 
-procedure TJPFpdf.SetTextColor(cor: TJPCor);
+procedure TJPFpdf.SetTextColor(color: TJPColor);
 begin
-  if (cor = jpBlack) then SetTextColor(0,0,0);
+  SetTextColor(JCOLOR_R[color],JCOLOR_G[color],JCOLOR_B[color]);
 end;
 
-function TJPFpdf.GetStringWidth(sss: string): double;
+procedure TJPFpdf.SetFillColor(color: TJPColor);
+begin
+  SetFillColor(JCOLOR_R[color],JCOLOR_G[color],JCOLOR_B[color]);
+end;
+
+procedure TJPFpdf.SetDrawColor(color: TJPColor);
+begin
+  SetDrawColor(JCOLOR_R[color],JCOLOR_G[color],JCOLOR_B[color]);
+end;
+
+function TJPFpdf.GetStringWidth(vText: string): double;
 var
-  fonte: string;
-  chave, vl, vi: integer;
+  vfamily: TPDFFontFamily;
+  vstyle: TPDFFontStyle;
+  vl, vi: integer;
   vw: double;
 begin
-  fonte := LowerCase(Self.ssFontFamily) + UpperCase(Self.ssFontStyle);
-  if ((fonte = 'courier') or (fonte = 'courierB') or (fonte = 'courierI') or
-    (fonte = 'courierBI')) then
-    chave := 0
-  else
-  if ((fonte = 'helvetica') or (fonte = 'arial')) then
-    chave := 4
-  else
-  if ((fonte = 'helveticaB') or (fonte = 'arialB')) then
-    chave := 5
-  else
-  if ((fonte = 'helveticaI') or (fonte = 'arialI')) then
-    chave := 6
-  else
-  if ((fonte = 'helveticaBI') or (fonte = 'arialBI')) then
-    chave := 7
-  else
-  if (fonte = 'times') then
-    chave := 8
-  else
-  if (fonte = 'timesB') then
-    chave := 9
-  else
-  if (fonte = 'timesI') then
-    chave := 10
-  else
-  if (fonte = 'timesBI') then
-    chave := 11
-  else
-  if (fonte = 'symbol') then
-    chave := 12
-  else
-  if (fonte = 'zapfdingbats') then
-    chave := 13;
+  vfamily := Self.cFontFamily;
+  vstyle := Self.cFontStyle;
+    if (vfamily in [ffCourier,ffSymbol,ffZapfdingbats]) then vstyle := fsNormal;
   vw := 0;
-  vl := Length(sss);
+  vl := Length(vText);
   for vi := 0 to vl do
-    vw += Self.ssfpdf_charwidths[chave][Ord(sss[vi])];
-  Result := vw * Self.ssFontSize / 1000;
+    vw += Self.Jpdf_charwidths[vfamily][vstyle][Ord(vText[vi])];
+  Result := vw * Self.cFontSize / 1000;
 end;
 
-procedure TJPFpdf.SetLineWidth(sswidth: double);
+procedure TJPFpdf.SetLineWidth(vWidth: double);
 begin
-	//Set line width
-  SetDecimal('.');
-	Self.ssLineWidth := sswidth;
-	if(Self.sspage > 0) then
-		_out(FloatToStr(sswidth) + ' w');
-  SetDecimal;
+  //Set line width
+  Self.pLineWidth := vWidth;
+  if (Self.page > 0) then
+    _out(FloatToStr(vWidth) + ' w');
 end;
 
-procedure TJPFpdf.Line(ssx1, ssy1, ssx2, ssy2: double);
+procedure TJPFpdf.Line(vX1, vY1, vX2, vY2: double);
 begin
-  SetDecimal('.');
-	//Draw a line
-	_out(FloatToStr(ssx1) + ' -' + FloatToStr(ssy1) + ' m ' + FloatToStr(ssx2) + ' -' + FloatToStr(ssy2) + ' l S');
-  SetDecimal;
+  //Draw a line
+  _out(FloatToStr(vX1) + ' -' + FloatToStr(vY1) + ' m ' + FloatToStr(vX2) +
+    ' -' + FloatToStr(vY2) + ' l S');
 end;
 
-procedure TJPFpdf.Rect(sx, sy, sw, sh: double; ssstyle: string);
+procedure TJPFpdf.Rect(vX, vY, vWidht, vHeight: double; vStyle: string);
 var
   vop: string;
 begin
-  SetDecimal('.');
-	//Draw a rectangle
-  ssstyle := UpperCase(ssstyle);
-	if(ssstyle = 'F') then
-		vop := 'f'
-	else if((ssstyle = 'FD') or (ssstyle = 'DF')) then
-		vop := 'B'
-	else
-		vop := 'S';
-	_out(FloatToStr(sx) + ' -' + FloatToStr(sy) + ' ' + FloatToStr(sw) + ' -' + FloatToStr(sh) + ' re ' + vop);
-  SetDecimal;
+  //Draw a rectangle
+  vStyle := UpperCase(vStyle);
+  if (vStyle = 'F') then
+    vop := 'f'
+  else if ((vStyle = 'FD') or (vStyle = 'DF')) then
+    vop := 'B'
+  else
+    vop := 'S';
+  _out(FloatToStr(vX) + ' -' + FloatToStr(vY) + ' ' + FloatToStr(vWidht) +
+    ' -' + FloatToStr(vHeight) + ' re ' + vop);
 end;
 
-procedure TJPFpdf.SetFont(sfamily: string; sstyle: string; ssize: double);
+procedure TJPFpdf.SetFont(fFamily: TPDFFontFamily; fStyle: TPDFFontStyle; fSize: double; fUnderline: boolean);
 begin
-  SetDecimal('.');
-	//Select a font; size given in points
-	if not(_setfont(sfamily,sstyle,ssize)) then
-		Error('Incorrect font family or style: ' + sfamily + ' ' + sstyle);
-  SetDecimal;
+  //Select a font; size given in points
+  _setfont(fFamily, fStyle, fSize);
+  Self.pUnderlineFlag := fUnderline;
 end;
 
-procedure TJPFpdf.SetFontSize(sssize: double);
+procedure TJPFpdf.SetFont(fFamily: TPDFFontFamily; fSize: double; fUnderline: boolean);
 begin
-  SetDecimal('.');
-	//Set font size in points
-	_setfontsize(sssize);
-  SetDecimal;
+  _setfont(fFamily, fsNormal, fSize);
+  Self.pUnderlineFlag := fUnderline;
 end;
 
-procedure TJPFpdf.Text(sx, sy: double; sstxt: string);
+procedure TJPFpdf.SetFontSize(fSize: double; fUnderline: boolean);
+begin
+  //Set font size in points
+  _setfontsize(fSize);
+  Self.pUnderlineFlag := fUnderline;
+end;
+
+procedure TJPFpdf.SetUnderline(fUnderline: boolean);
+begin
+  Self.pUnderlineFlag := fUnderline;
+end;
+
+procedure TJPFpdf.Text(vX, vY: double; vText: string);
 var
   sss: string;
 begin
-  SetDecimal('.');
-	//Output a string
-  sstxt := StringReplace(StringReplace(StringReplace(sstxt,'\','\\',[rfReplaceAll]),')','\)',[rfReplaceAll]),'(','\(',[rfReplaceAll]);
-	sss := 'BT ' + FloatToStr(sx) + ' -' + FloatToStr(sy) + ' Td (' + sstxt + ') Tj ET';
-	if (Self.ssColorFlag) then
-		sss := 'q ' + Self.ssTextColor + ' ' + sss + ' Q';
-	_out(sss);
-  SetDecimal;
+  //Output a string
+  vText := StringReplace(StringReplace(
+    StringReplace(vText, '\', '\\', [rfReplaceAll]), ')', '\)', [rfReplaceAll]),
+    '(', '\(', [rfReplaceAll]);
+  sss := 'BT ' + FloatToStr(vX) + ' -' + FloatToStr(vY) + ' Td (' + vText + ') Tj ET';
+	if((Self.pUnderlineFlag) and (vText <> '')) then
+		sss += ' ' + _dounderline(vX, vY, vText);
+  if (Self.pColorFlag) then
+    sss := 'q ' + Self.pTextColor + ' ' + sss + ' Q';
+  _out(sss);
+end;
+
+procedure TJPFpdf.Writer(vHeight: double; vText: string);
+var
+  vfamily: TPDFFontFamily;
+  vstyle: TPDFFontStyle;
+  vw: Extended;
+  vwmax: Extended;
+  vs: String;
+  vnb: Integer;
+  vnl: Integer;
+  vl: Integer;
+  vj: Integer;
+  vi: Integer;
+  vsep: Integer;
+  vc: char;
+begin
+	//Output text in flowing mode
+  vfamily := Self.cFontFamily;
+  vstyle := Self.cFontStyle;
+  if (vfamily in [ffCourier,ffSymbol,ffZapfdingbats]) then vstyle := fsNormal;
+	vw := Self.dw - Self.rMargin - Self.cpX;
+	vwmax := (vw - 2 * Self.cMargin) * 1000 / Self.cFontSize;
+	vs := StringReplace(vText, #13, '', [rfReplaceAll]);
+	vnb := Length(vs);
+	vsep := -1;
+	vi := 0;
+	vj := 0;
+	vl := 0;
+	vnl := 1;
+	while(vi < vnb) do
+	begin
+		//Get next character
+		vc := vs[vi];
+		if(vc = #10) then
+		begin
+			//Explicit line break
+			Cell(vw, vHeight, Copy(vs, vj, vi - vj), '0', 2, '', 0);
+			vi := vi + 1;
+			vsep := -1;
+			vj := vi;
+			vl := 0;
+			if(vnl = 1) then
+			begin
+				Self.cpX := Self.lMargin;
+				vw := Self.dw - Self.rMargin - Self.cpX;
+				vwmax := (vw - 2 * Self.cMargin) * 1000 / Self.cFontSize;
+			end;
+			vnl := vnl + 1;
+			continue;
+		end;
+		if(vc = ' ') then
+			vsep := vi;
+		vl += Self.Jpdf_charwidths[vfamily][vstyle][Ord(vc)];
+		if(vl > vwmax) then
+		begin
+			//Automatic line break
+			if(vsep = -1) then
+			begin
+				if(Self.cpX > Self.lMargin) then
+				begin
+					//Move to next line
+					Self.cpX := Self.lMargin;
+					Self.cpY += vHeight;
+					vw := Self.dw - Self.rMargin - Self.cpX;
+					vwmax := (vw - 2 * Self.cMargin) * 1000 / Self.cFontSize;
+					vi := vi + 1;
+					vnl := vnl + 1;
+					continue;
+				end;
+				if(vi = vj) then
+					vi := vi + 1;
+				Cell(vw, vHeight, Copy(vs, vj, vi - vj), '0', 2, '', 0);
+			end
+			else
+			begin
+				Cell(vw, vHeight, Copy(vs, vj, vsep - vj), '0', 2, '', 0);
+				vi := vsep + 1;
+			end;
+			vsep := -1;
+			vj := vi;
+			vl := 0;
+			if(vnl = 1) then
+			begin
+				Self.cpX := Self.lMargin;
+				vw := Self.dw - Self.rMargin - Self.cpX;
+				vwmax := (vw - 2 * Self.cMargin) * 1000 / Self.cFontSize;
+			end;
+			vnl := vnl + 1;
+		end
+		else
+			vi := vi + 1;
+	end;
+	//Last chunk
+	if(vi <> vj) then
+	begin
+		vw := StrToFloat(FloatToStrF(vl / 1000 * Self.cFontSize, ffNumber, 14, 2));
+		Cell(vw, vHeight, Copy(vs, vj, vi), '0', 0, '', 0);
+	end;
 end;
 
 function TJPFpdf.AcceptPageBreak: boolean;
 begin
-	//Accept automatic page break or not
-	Result := Self.ssAutoPageBreak;
+  //Accept automatic page break or not
+  Result := Self.AutoPageBreak;
 end;
 
-procedure TJPFpdf.Image(ssfile: string; sx: double; sy: double;
-  sw: double; sh: double; sstype: string);
+procedure TJPFpdf.Image(vFile: string; vX: double; vY: double;
+  vWidth: double; vHeight: double);
 var
-  n,i: integer;
-  img: TJPDadosImage;
+  i: integer;
+  img: TJPImageInfo;
   flag: boolean;
 begin
-//   Self.ssimages[0] := GetDadosImagem('/home/jean/teste4.png');
-  {
-  var
-    ms: TMemoryStream;
-    i: integer;
-  begin
-
-    ms := TMemoryStream.Create;
-    ms.Position := 0;
-    ms.WriteByte($03);  // número hexadecimal
-    ms.Position := 0;
-    ShowMessage(IntToStr(ms.ReadByte));  // retorna 3
-
-    // O BYTE DA POSIÇÃO 25 CONTEM O PADRAO DE COR DO PNG - VALORES 3 E 6 É RGB
-    //
-  }
-
-	//Put an image on the page
-  flag := false;
-	if (Length(Self.ssimages) > 0) then
-    for i := 0 to Length(Self.ssimages)-1 do begin
-      if (Self.ssimages[i].caminho = ssfile) then begin
-        flag := true;
+  //Put an image on the page
+  flag := False;
+  if (Length(Self.pImages) > 0) then
+    for i := 0 to Length(Self.pImages) - 1 do
+    begin
+      if (Self.pImages[i].filePath = vFile) then
+      begin
+        flag := True;
+        img := Self.pImages[i];
         break;
       end;
     end;
-	if not(flag) then
-	begin
-		//First use of image, get info
-{		if(sstype = '') then
-		begin
-			sspos := strrpos(ssfile,'.');
-			if(not sspos) then
-				Self.ssError('Image file has no extension and no type was specified: ' + ssfile);
-			sstype := substr(ssfile,sspos+1);
-		end;
-		sstype := strtolower(sstype);
-		ssmqr := get_magic_quotes_runtime();
-		set_magic_quotes_runtime(0);
-		if(sstype = 'jpg' or sstype = 'jpeg') then
-			ssinfo := _parsejpg(ssfile);
-		else if(sstype = 'png') then
-			ssinfo := _parsepng(ssfile);
-		else
-			Self.ssError('Unsupported image file type: ' + sstype);
-		set_magic_quotes_runtime(ssmqr);}
-    SetLength(Self.ssimages,Length(Self.ssimages)+1);
-    Self.ssimages[Length(Self.ssimages)-1].dados := TMemoryStream.Create;
-    Self.ssimages[Length(Self.ssimages)-1] := GetDadosImagem(ssfile);
-//    Self.ssimages[Length(Self.ssimages)-1].dados.LoadFromFile('/home/jean/tempconv.jpg');
-		Self.ssimages[Length(Self.ssimages)-1].n := Length(Self.ssimages);
-		Self.ssimages[Length(Self.ssimages)-1].caminho :=  ssfile;
-	end
-	else
-		//img := Self.ssimages[i];
-	//Automatic width or height calculus
-	if(sw = 0) then
-		//sw := round(sh * img.w / img.h, 2);
-  	sw := StrToFloat(FloatToStrF((sh * img.w / img.h), ffNumber, 14, 2));
-	if(sh = 0) then
-		//sh := round(sw * img.h / img.w, 2);
-  	sh := StrToFloat(FloatToStrF((sw * img.h / img.w), ffNumber, 14, 2));
-	_out('q ' + FloatToStr(sw) + ' 0 0 ' + FloatToStr(sh) + ' ' + FloatToStr(sx) + ' -' + FloatToStr(sy + sh) + ' cm /I' + IntToStr(Length(Self.ssimages)) + ' Do Q');
+  if not (flag) then
+  begin
+    //First use of image, get info
+    SetLength(Self.pImages, Length(Self.pImages) + 1);
+    Self.pImages[Length(Self.pImages) - 1].imgSource := TMemoryStream.Create;
+    Self.pImages[Length(Self.pImages) - 1] := GetInfoImage(vFile);
+    Self.pImages[Length(Self.pImages) - 1].n := Length(Self.pImages);
+    Self.pImages[Length(Self.pImages) - 1].filePath := vFile;
+    img := Self.pImages[Length(Self.pImages) - 1];
+  end
+  else
+  //Automatic width or height calculus
+  if (vWidth = 0) then
+    vWidth := StrToFloat(FloatToStrF((vHeight * img.w / img.h), ffNumber, 14, 2));
+  if (vHeight = 0) then
+    vHeight := StrToFloat(FloatToStrF((vWidth * img.h / img.w), ffNumber, 14, 2));
+  _out('q ' + FloatToStr(vWidth) + ' 0 0 ' + FloatToStr(vHeight) + ' ' +
+    FloatToStr(vX) + ' -' + FloatToStr(vY + vHeight) + ' cm /I' +
+    IntToStr(Length(Self.pImages)) + ' Do Q');
 end;
 
-procedure TJPFpdf.Cell(sw: double; sh: double; sstxt: string;
-  ssborder: string; ssln: integer; ssalign: string; ssfill: integer);
+procedure TJPFpdf.Cell(vWidth: double; vHeight: double; vText: string;
+  vBorder: string; vLineBreak: integer; vAlign: string; vFill: integer);
 var
   vws, vx, vy, vdx: double;
   sss: string;
 begin
-  SetDecimal('.');
-  //sstxt := Utf8ToAnsi(sstxt);
   //Output a cell
-	if(((Self.ssy + sh) > Self.ssPageBreakTrigger) and not (Self.ssInFooter) and (AcceptPageBreak())) then
-	begin
-		vx := Self.ssx;
-		vws := Self.ssws;
-		if(vws > 0) then begin
-      Self.ssws := 0;
-			_out('0 Tw');
+  if (((Self.cpY + vHeight) > Self.PageBreakTrigger) and not (Self.InFooter) and
+    (AcceptPageBreak())) then
+  begin
+    vx := Self.cpX;
+    vws := Self.pgWs;
+    if (vws > 0) then
+    begin
+      Self.pgWs := 0;
+      _out('0 Tw');
     end;
-		AddPage(Self.ssCurOrientation);
-		Self.ssx := vx;
-		if(vws > 0) then begin
-      Self.ssws := vws;
-			_out(FloatToStr(vws) + ' Tw');
-      end;
-	end;
-	if(sw = 0) then
-		sw := Self.ssw - Self.sslMargin - Self.ssx;
-	sss := '';
-	if((ssfill = 1) or (ssborder = '1')) then
-	begin
-		sss  +=  FloatToStr(Self.ssx) + ' -' + FloatToStr(Self.ssy) + ' ' + FloatToStr(sw) + ' -' + FloatToStr(sh) + ' re ';
-		if(ssfill = 1) then
-      if (ssborder = '1') then sss += 'B ' else sss += 'f '
-		else
-			sss  +=  'S ';
-	end;
+    AddPage(Self.CurOrientation);
+    Self.cpX := vx;
+    if (vws > 0) then
+    begin
+      Self.pgWs := vws;
+      _out(FloatToStr(vws) + ' Tw');
+    end;
+  end;
+  if (vWidth = 0) then
+    vWidth := Self.dw - Self.rMargin - Self.cpX;
+  sss := '';
+  if ((vFill = 1) or (vBorder = '1')) then
+  begin
+    sss += FloatToStr(Self.cpX) + ' -' + FloatToStr(Self.cpY) + ' ' +
+      FloatToStr(vWidth) + ' -' + FloatToStr(vHeight) + ' re ';
+    if (vFill = 1) then
+      if (vBorder = '1') then
+        sss += 'B '
+      else
+        sss += 'f '
+    else
+      sss += 'S ';
+  end;
 
-	if((Pos('L',ssborder) > 0) or (Pos('T',ssborder) > 0) or (Pos('R',ssborder) > 0) or (Pos('B',ssborder) > 0)) then
-	begin
-		vx := Self.ssx;
-		vy := Self.ssy;
-		if(Pos('L',ssborder) > 0) then
-			sss  +=  FloatToStr(vx) + ' -' + FloatToStr(vy) + ' m ' + FloatToStr(vx) + ' -' + FloatToStr((vy + sh)) + ' l S ';
-		if(Pos('T',ssborder) > 0) then
-			sss  +=  FloatToStr(vx) + ' -' + FloatToStr(vy) + ' m ' + FloatToStr((vx + sw)) + ' -' + FloatToStr(vy) + ' l S ';
-		if(Pos('R',ssborder) > 0) then
-			sss  +=  FloatToStr((vx + sw)) + ' -' + FloatToStr(vy) + ' m ' + FloatToStr((vx + sw)) + ' -' + FloatToStr((vy + sh)) + ' l S ';
-		if(Pos('B',ssborder) > 0) then
-			sss  +=  FloatToStr(vx) + ' -' + FloatToStr((vy + sh)) + ' m ' + FloatToStr((vx + sw)) + ' -' + FloatToStr((vy + sh)) + ' l S ';
-	end;
-	if(sstxt <> '') then
-	begin
-		if(ssalign = 'R') then
-			vdx := sw - Self.sscMargin - GetStringWidth(sstxt)
-		else if(ssalign = 'C') then
-			vdx := (sw - GetStringWidth(sstxt)) / 2
-		else
-			vdx := Self.sscMargin;
-		sstxt := StringReplace(StringReplace(StringReplace(sstxt,'\','\\',[rfReplaceAll]),')','\)',[rfReplaceAll]),'(','\(',[rfReplaceAll]);
-		if(Self.ssColorFlag) then
-			sss  +=  'q ' + Self.ssTextColor + ' ';
-		sss  +=  'BT ' + FloatToStr((Self.ssx + vdx)) + ' -' + FloatToStr((Self.ssy + 0.5 * sh + 0.3 * Self.ssFontSize)) + ' Td (' + sstxt + ') Tj ET';
-		if(Self.ssColorFlag) then
-			sss  +=  ' Q';
-	end;
-	if (sss <> '') then
-		_out(sss);
-	Self.sslasth := sh;
-	if(ssln > 0) then
-	begin
-		//Go to next line
-		Self.ssy += sh;
-		if(ssln = 1) then
-			Self.ssx := Self.sslMargin;
-	end
-	else
-		Self.ssx += sw;
-  SetDecimal;
+  if ((Pos('L', vBorder) > 0) or (Pos('T', vBorder) > 0) or
+    (Pos('R', vBorder) > 0) or (Pos('B', vBorder) > 0)) then
+  begin
+    vx := Self.cpX;
+    vy := Self.cpY;
+    if (Pos('L', vBorder) > 0) then
+      sss += FloatToStr(vx) + ' -' + FloatToStr(vy) + ' m ' + FloatToStr(vx) +
+        ' -' + FloatToStr((vy + vHeight)) + ' l S ';
+    if (Pos('T', vBorder) > 0) then
+      sss += FloatToStr(vx) + ' -' + FloatToStr(vy) + ' m ' + FloatToStr(
+        (vx + vWidth)) + ' -' + FloatToStr(vy) + ' l S ';
+    if (Pos('R', vBorder) > 0) then
+      sss += FloatToStr((vx + vWidth)) + ' -' + FloatToStr(vy) + ' m ' +
+        FloatToStr((vx + vWidth)) + ' -' + FloatToStr((vy + vHeight)) + ' l S ';
+    if (Pos('B', vBorder) > 0) then
+      sss += FloatToStr(vx) + ' -' + FloatToStr((vy + vHeight)) + ' m ' +
+        FloatToStr((vx + vWidth)) + ' -' + FloatToStr((vy + vHeight)) + ' l S ';
+  end;
+  if (vText <> '') then
+  begin
+    if (vAlign = 'R') then
+      vdx := vWidth - Self.cMargin - GetStringWidth(vText)
+    else if (vAlign = 'C') then
+      vdx := (vWidth - GetStringWidth(vText)) / 2
+    else
+      vdx := Self.cMargin;
+    vText := StringReplace(StringReplace(
+      StringReplace(vText, '\', '\\', [rfReplaceAll]), ')', '\)', [rfReplaceAll]),
+      '(', '\(', [rfReplaceAll]);
+    if (Self.pColorFlag) then
+      sss += 'q ' + Self.pTextColor + ' ';
+    sss += 'BT ' + FloatToStr((Self.cpX + vdx)) + ' -' + FloatToStr(
+      (Self.cpY + 0.5 * vHeight + 0.3 * Self.cFontSize)) + ' Td (' + vText + ') Tj ET';
+    if(pUnderlineFlag) then
+    			sss += ' ' + _dounderline(Self.cpX + vdx, Self.cpY + 0.5 * vHeight + 0.3 * Self.cFontSize, vText);
+    if (Self.pColorFlag) then
+      sss += ' Q';
+  end;
+  if (sss <> '') then
+    _out(sss);
+  Self.hLasth := vHeight;
+  if (vLineBreak > 0) then
+  begin
+    //Go to next line
+    Self.cpY += vHeight;
+    if (vLineBreak = 1) then
+      Self.cpX := Self.lMargin;
+  end
+  else
+    Self.cpX += vWidth;
 end;
 
-procedure TJPFpdf.MultiCell(sw, sh: double; sstxt: string; ssborder: string;
-  ssalign: string; ssfill: integer);
+procedure TJPFpdf.MultiCell(vWidth, vHeight: double; vText: string; vBorder: string;
+  vAlign: string; vFill: integer);
 var
-  vb,vb2: string;
+  vfamily: TPDFFontFamily;
+  vstyle: TPDFFontStyle;
+  vb, vb2: string;
   vc: char;
-  fonte,vs: string;
-  chave,vnb,vsep,vi,vj,vl,vns,vnl,vls: integer;
-  vwmax,vx,vy: double;
+  vs: string;
+  vnb, vsep, vi, vj, vl, vns, vnl, vls: integer;
+  vwmax: double;
 begin
-fonte := LowerCase(Self.ssFontFamily) + UpperCase(Self.ssFontStyle);
-if ((fonte = 'courier') or (fonte = 'courierB') or (fonte = 'courierI') or
-  (fonte = 'courierBI')) then
-  chave := 0
-else
-if ((fonte = 'helvetica') or (fonte = 'arial')) then
-  chave := 4
-else
-if ((fonte = 'helveticaB') or (fonte = 'arialB')) then
-  chave := 5
-else
-if ((fonte = 'helveticaI') or (fonte = 'arialI')) then
-  chave := 6
-else
-if ((fonte = 'helveticaBI') or (fonte = 'arialBI')) then
-  chave := 7
-else
-if (fonte = 'times') then
-  chave := 8
-else
-if (fonte = 'timesB') then
-  chave := 9
-else
-if (fonte = 'timesI') then
-  chave := 10
-else
-if (fonte = 'timesBI') then
-  chave := 11
-else
-if (fonte = 'symbol') then
-  chave := 12
-else
-if (fonte = 'zapfdingbats') then
-  chave := 13;
-if(sw = 0) then
-	sw := Self.ssw - Self.sslMargin - Self.ssx;
-vwmax := (sw - 2 * Self.sscMargin) * 1000 / Self.ssFontSize;
-sstxt := #10 + sstxt;
-vs := StringReplace(sstxt,#13,'',[rfReplaceAll]);
-vnb := Length(vs);
-if((vnb > 0) and (vs[vnb - 1] = #10)) then
-	vnb := vnb - 1;
-vb := '';
-if(ssborder <> '') then
-begin
-	if(ssborder = '1') then
-	begin
-		ssborder := 'LTRB';
-		vb := 'LRT';
-		vb2 := 'LR';
-	end
-	else
-	begin
-		vb2 := '';
-		if(Pos('L',ssborder) > 0) then
-			vb2 += 'L';
-		if(Pos('R',ssborder) > 0) then
-			vb2 += 'R';
-    if(Pos('T',ssborder) > 0) then vb := vb2 + 'T' else vb := vb2;
-	end;
-end;
-vsep := -1;
-vi := 0;
-vj := 0;
-vl := 0;
-vns := 0;
-vnl := 1;
-while(vi < vnb) do
-begin
-	//Get next character
-	vc := vs[vi];
-	if(vc = #10) then
-	begin
-		//Explicit line break
-		if(Self.ssws > 0) then
-		begin
-			Self.ssws := 0;
-		  _out('0 Tw');
-		end;
-    if (vi > 1) then Cell(sw, sh, Copy(vs, vj, vi-vj), vb, 2, ssalign, ssfill) else
-      {if (UpperCase(ssalign) = 'J') then}
-        Cell(sw, 0, Copy(vs, vj, vi-vj), vb, 2, ssalign, ssfill) {else
-          Cell(sw, sh, Copy(vs, vj, vi-vj), vb, 2, ssalign, ssfill)};
-		vi := vi + 1;
-		vsep := -1;
-		vj := vi;
-		vl := 0;
-		vns := 0;
-		vnl := vnl + 1;
-		if((ssborder <> '') and (vnl = 2)) then
-			vb := vb2;
-		continue;
-	end;
-	if(vc = ' ') then
-	begin
-		vsep := vi;
-		vls := vl;
-		vns := vns + 1;
-	end;
-	vl += Self.ssfpdf_charwidths[chave][Ord(vc)];
-	if(vl > vwmax) then
-	begin
-		//Automatic line break
-		if(vsep = -1) then
-		begin
-	  	if(vi = vj) then
-				vi := vi + 1;
-			if(Self.ssws > 0) then
-			begin
-				Self.ssws := 0;
-				_out('0 Tw');
-			end;
-			Cell(sw, sh, Copy(vs,vj,vi-vj), vb, 2, ssalign, ssfill);
-		end
-		else
-		begin
-			if(ssalign = 'J') then
-			begin
-        if (vns > 1) then Self.ssws := StrToFloat(FloatToStrF((vwmax - vls) / 1000 * Self.ssFontSize / (vns - 1),ffNumber,14,3)) else
-          Self.ssws := 0;
-				_out(FloatToStr(Self.ssws) + ' Tw');
-			end;
-		 	Cell(sw, sh, Copy(vs,vj,vsep-vj), vb, 2, ssalign, ssfill);
-			vi := vsep + 1;
-		end;
-		vsep := -1;
-		vj := vi;
-		vl := 0;
-		vns := 0;
-		vnl := vnl + 1;
-		if((ssborder = '') and (vnl = 2)) then
-			vb := vb2;
-	end
-	else
-		vi := vi + 1;
-end;
-//Last chunk
-if(Self.ssws > 0) then
-begin
-	Self.ssws := 0;
-	_out('0 Tw');
-end;
-if((ssborder <> '') and (Pos('B',ssborder) > 0)) then
-	vb += 'B';
-Cell(sw, sh, Copy(vs, vj, vi-vj), vb, 2, ssalign, ssfill);
-Self.ssx := Self.sslMargin;
+  vfamily := Self.cFontFamily;
+  vstyle := Self.cFontStyle;
+  if (vfamily in [ffCourier,ffSymbol,ffZapfdingbats]) then vstyle := fsNormal;
+  if (vWidth = 0) then
+    vWidth := Self.dw - Self.rMargin - Self.cpX;
+  vwmax := (vWidth - 2 * Self.cMargin) * 1000 / Self.cFontSize;
+  vText := #10 + vText;
+  vs := StringReplace(vText, #13, '', [rfReplaceAll]);
+  vnb := Length(vs);
+  if ((vnb > 0) and (vs[vnb - 1] = #10)) then
+    vnb := vnb - 1;
+  vb := '';
+  if (vBorder <> '') then
+  begin
+    if (vBorder = '1') then
+    begin
+      vBorder := 'LTRB';
+      vb := 'LRT';
+      vb2 := 'LR';
+    end
+    else
+    begin
+      vb2 := '';
+      if (Pos('L', vBorder) > 0) then
+        vb2 += 'L';
+      if (Pos('R', vBorder) > 0) then
+        vb2 += 'R';
+      if (Pos('T', vBorder) > 0) then
+        vb := vb2 + 'T'
+      else
+        vb := vb2;
+    end;
+  end;
+  vsep := -1;
+  vi := 0;
+  vj := 0;
+  vl := 0;
+  vns := 0;
+  vnl := 1;
+  while (vi < vnb) do
+  begin
+    //Get next character
+    vc := vs[vi];
+    if (vc = #10) then
+    begin
+      //Explicit line break
+      if (Self.pgWs > 0) then
+      begin
+        Self.pgWs := 0;
+        _out('0 Tw');
+      end;
+      if (vi > 1) then
+        Cell(vWidth, vHeight, Copy(vs, vj, vi - vj), vb, 2, vAlign, vFill)
+      else
+        Cell(vWidth, 0, Copy(vs, vj, vi - vj), vb, 2, vAlign, vFill);
+      vi := vi + 1;
+      vsep := -1;
+      vj := vi;
+      vl := 0;
+      vns := 0;
+      vnl := vnl + 1;
+      if ((vBorder <> '') and (vnl = 2)) then
+        vb := vb2;
+      continue;
+    end;
+    if (vc = ' ') then
+    begin
+      vsep := vi;
+      vls := vl;
+      vns := vns + 1;
+    end;
+    vl += Self.Jpdf_charwidths[vfamily][vstyle][Ord(vc)];
+    if (vl > vwmax) then
+    begin
+      //Automatic line break
+      if (vsep = -1) then
+      begin
+        if (vi = vj) then
+          vi := vi + 1;
+        if (Self.pgWs > 0) then
+        begin
+          Self.pgWs := 0;
+          _out('0 Tw');
+        end;
+        Cell(vWidth, vHeight, Copy(vs, vj, vi - vj), vb, 2, vAlign, vFill);
+      end
+      else
+      begin
+        if (vAlign = 'J') then
+        begin
+          if (vns > 1) then
+            Self.pgWs := StrToFloat(FloatToStrF((vwmax - vls) / 1000 * Self.cFontSize /
+              (vns - 1), ffNumber, 14, 3))
+          else
+            Self.pgWs := 0;
+          _out(FloatToStr(Self.pgWs) + ' Tw');
+        end;
+        Cell(vWidth, vHeight, Copy(vs, vj, vsep - vj), vb, 2, vAlign, vFill);
+        vi := vsep + 1;
+      end;
+      vsep := -1;
+      vj := vi;
+      vl := 0;
+      vns := 0;
+      vnl := vnl + 1;
+      if ((vBorder = '') and (vnl = 2)) then
+        vb := vb2;
+    end
+    else
+      vi := vi + 1;
+  end;
+  //Last chunk
+  if (Self.pgWs > 0) then
+  begin
+    Self.pgWs := 0;
+    _out('0 Tw');
+  end;
+  if ((vBorder <> '') and (Pos('B', vBorder) > 0)) then
+    vb += 'B';
+  Cell(vWidth, vHeight, Copy(vs, vj, vi - vj), vb, 2, vAlign, vFill);
+  Self.cpX := Self.lMargin;
 end;
 
-procedure TJPFpdf.Ln(sh: double);
+procedure TJPFpdf.Ln(vHeight: double);
 begin
-  SetDecimal('.');
-	//Line feed; default value is last cell height
-	Self.ssx := Self.sslMargin;
-	if(sh <= 0) then
-		Self.ssy += Self.sslasth
-	else
-		Self.ssy += sh;
-  SetDecimal;
+  //Line feed; default value is last cell height
+  Self.cpX := Self.lMargin;
+  if (vHeight <= 0) then
+    Self.cpY += Self.hLasth
+  else
+    Self.cpY += vHeight;
 end;
 
 function TJPFpdf.GetX: double;
 begin
-  SetDecimal('.');
-	//Get x position
-	Result := Self.ssx;
-  SetDecimal;
+  //Get x position
+  Result := Self.cpX;
 end;
 
-procedure TJPFpdf.SetX(sx: double);
+procedure TJPFpdf.SetX(vX: double);
 begin
-  SetDecimal('.');
-	//Set x position
-	if(sx >= 0) then
-		Self.ssx := sx
-	else
-		Self.ssx := Self.ssw + sx;
-  SetDecimal;
+  //Set x position
+  if (vX >= 0) then
+    Self.cpX := vX
+  else
+    Self.cpX := Self.dw + vX;
 end;
 
 function TJPFpdf.GetY: double;
 begin
-  SetDecimal('.');
-	//Get y position
-	Result := Self.ssy;
-  SetDecimal;
+  //Get y position
+  Result := Self.cpY;
 end;
 
-procedure TJPFpdf.SetY(sy: double);
+procedure TJPFpdf.SetY(vY: double);
 begin
-  SetDecimal('.');
-	//Set y position and reset x
-	Self.ssx := Self.sslMargin;
-	if(ssy >= 0) then
-		Self.ssy := sy
-	else
-		Self.ssy := Self.ssh + sy;
-  SetDecimal;
+  //Set y position and reset x
+  Self.cpX := Self.lMargin;
+  if (cpY >= 0) then
+    Self.cpY := vY
+  else
+    Self.cpY := Self.dh + vY;
 end;
 
-procedure TJPFpdf.SetXY(sx, sy: double);
+procedure TJPFpdf.SetXY(vX, vY: double);
 begin
-  SetDecimal('.');
-	//Set x and y positions
-	SetY(sy);
-	SetX(sx);
-  SetDecimal;
+  //Set x and y positions
+  SetY(vY);
+  SetX(vX);
 end;
 
-procedure TJPFpdf.Output(ssfile: string; ssdownload: boolean);
+procedure TJPFpdf.Output(vFile: string; vDownload: boolean);
 begin
-  SetDecimal('.');
-	//Output PDF to file or browser
+  //Output PDF to file or browser
 
-	if(Self.ssstate < 3) then begin
-		Close;
+  if (Self.state < 3) then
+  begin
+    Close;
   end;
-	if(ssfile = '') then
-	begin
-		//Send to browser
-//		Header('Content-Type: application/pdf');
-//		if(headers_sent()) then
-//			Self.ssError('Some data has already been output to browser, can\'t send PDF file');
-//		Header('Content-Length: ' + strlen(Self.ssbuffer));
-//		Header('Content-disposition: inline; filename := doc.pdf');
-//		echo Self.ssbuffer;
-	end
-	else
-	begin
-		if(ssdownload) then
-		begin
-			//Download file
-//			if(isset(ssHTTP_ENV_VARS['HTTP_USER_AGENT']) and strpos(ssHTTP_ENV_VARS['HTTP_USER_AGENT'],'MSIE 5.5')) then
-//				Header('Content-Type: application/dummy');
-//			else
-//				Header('Content-Type: application/octet-stream');
-//			if(headers_sent()) then
-//				Self.ssError('Some data has already been output to browser, can\'t send PDF file');
-//			Header('Content-Length: ' + strlen(Self.ssbuffer));
-//			Header('Content-disposition: attachment; filename := ' + ssfile);
-//			echo Self.ssbuffer;
-		end
-		else
-		begin
-			//Save file locally
+  if (vFile = '') then
+  begin
+    //Send to browser
+    //    Header('Content-Type: application/pdf');
+    //    if(headers_sent()) then
+    //      Self.ssError('Some data has already been output to browser, can\'t send PDF file');
+    //    Header('Content-Length: ' + strlen(Self.buffer));
+    //    Header('Content-disposition: inline; filename := doc.pdf');
+    //    echo Self.buffer;
+  end
+  else
+  begin
+    if (vDownload) then
+    begin
+      //Download file
+      //      if(isset(ssHTTP_ENV_VARS['HTTP_USER_AGENT']) and strpos(ssHTTP_ENV_VARS['HTTP_USER_AGENT'],'MSIE 5.5')) then
+      //        Header('Content-Type: application/dummy');
+      //      else
+      //        Header('Content-Type: application/octet-stream');
+      //      if(headers_sent()) then
+      //        Self.ssError('Some data has already been output to browser, can\'t send PDF file');
+      //      Header('Content-Length: ' + strlen(Self.buffer));
+      //      Header('Content-disposition: attachment; filename := ' + vFile);
+      //      echo Self.buffer;
+    end
+    else
+    begin
+      //Save file locally
       try
-        Self.ssbuffer.SaveToFile(ssfile);
+        Self.buffer.SaveToFile(vFile);
       except
-        Error('Unable to create output file: ' + ssfile);
+        Error('Unable to create output file: ' + vFile);
       end;
-	end;
-end;
+    end;
+  end;
 end;
 
 procedure TJPFpdf._begindoc;
 begin
-	//Start document
-	Self.ssstate := 1;
-	_out('%PDF-1.7');
+  //Start document
+  Self.state := 1;
+  _out('%PDF-1.7');
 end;
 
-function TJPFpdf._setfont(ssfamily: string; ssstyle: string; sssize: double): boolean;
+function TJPFpdf._setfont(fFamily: TPDFFontFamily; fStyle: TPDFFontStyle; fSize: double): boolean;
 var
   vfontname: string;
   vn: integer;
 begin
-  SetDecimal('.');
-	ssfamily := LowerCase(ssfamily);
-	if(ssfamily = '') then
-		ssfamily := Self.ssFontFamily;
-	if(ssfamily = 'arial') then
-		ssfamily := 'helvetica';
-	if((ssfamily = 'symbol') or (ssfamily = 'zapfdingbats')) then
-		ssstyle := '';
-	ssstyle := UpperCase(ssstyle);
-	if(ssstyle = 'IB') then
-		ssstyle := 'BI';
-	if(sssize = 0) then
-		sssize := Self.ssFontSizePt;
-	//Test if font is already selected
-	if((Self.ssFontFamily = ssfamily) and (Self.ssFontStyle = ssstyle) and (Self.ssFontSizePt = sssize)) then begin
-		Result := true;
-    SetDecimal;
+  if (fSize = 0) then
+    fSize := Self.cFontSizePt;
+  //Test if font is already selected
+  if ((Self.cFontFamily = fFamily) and (Self.cFontStyle = fStyle) and
+    (Self.cFontSizePt = fSize)) then
+  begin
+    Result := True;
     Exit;
   end;
-	//Retrieve Type1 font name
-	if not(ValidaFonte(ssfamily + ssstyle)) then begin
-	  Result := false;
-    SetDecimal;
-    Exit;
+  //Retrieve Type1 font name
+  if (fFamily = ffTimes) then
+    if (fStyle = fsNormal) then vfontname := 'Times-Roman' else
+      vfontname := JFONTFAMILY[fFamily] + StringReplace(JFONTSTYLE[fStyle],'Oblique','Italic',[rfReplaceAll])
+  else
+    vfontname := JFONTFAMILY[fFamily] + JFONTSTYLE[fStyle];
+  //Test if used for the first time
+  if not (FontWasUsed(vfontname)) then
+  begin
+    vn := Length(Self.pFonts);
+    SetLength(Self.pFonts, vn + 1);
+    Self.pFonts[vn].number := vn + 1;
+    Self.pFonts[vn].name := vfontname;
   end;
-	vfontname := DevolveNomeFone(ssfamily + ssstyle);
-	//Test if used for the first time
-	if not(FonteFoiUsada(ssfamily + ssstyle)) then
-	begin
-		vn :=  Length(Self.ssfonts);
-    SetLength(Self.ssfonts, vn + 1);
-		Self.ssfonts[vn].numero := vn + 1;
-    Self.ssfonts[vn].nome := vfontname;
-	end;
-	//Select it
-	Self.ssFontFamily := ssfamily;
-	Self.ssFontStyle := ssstyle;
-	Self.ssFontSizePt := sssize;
-	Self.ssFontSize := StrToFloat(FloatToStrF(sssize / Self.ssk, ffNumber, 14, 2));
-  for vn := 0 to Length(Self.ssfonts) do begin
-    if (Self.ssfonts[vn].nome = vfontname) then break;
+  //Select it
+  Self.cFontFamily := fFamily;
+  Self.cFontStyle := fStyle;
+  Self.cFontSizePt := fSize;
+  Self.cFontSize := StrToFloat(FloatToStrF(fSize / Self.pgK, ffNumber, 14, 2));
+  for vn := 0 to Length(Self.pFonts) do
+  begin
+    if (Self.pFonts[vn].name = vfontname) then
+      break;
   end;
-if(Self.sspage > 0) then
-		_out('BT /F' + IntToStr(Self.ssfonts[vn].numero) + ' ' + FloatToStrF(Self.ssFontSize, ffNumber, 14, 2) + ' Tf ET');
-	Result := true;
-  SetDecimal;
+  if (Self.page > 0) then
+    _out('BT /F' + IntToStr(Self.pFonts[vn].number) + ' ' +
+      FloatToStrF(Self.cFontSize, ffNumber, 14, 2) + ' Tf ET');
+  Result := True;
 end;
 
 procedure TJPFpdf._enddoc;
 var
-  vnb, vn, vo, vnbpal,vi, vnf,vu,vni: integer;
+  vnb, vn, vo, vnbpal, vi, vnf, vu, vni: integer;
   vwPt, vhPt: double;
-  vfilter, vkids, vtrns, vp, vname: string;
+  vfilter, vkids, vp: string;
 begin
-  SetDecimal('.');
-	//Terminate document
-	vnb := Self.sspage;
-	if not(Self.ssAliasNbPages = '') then
-	begin
-		//Replace number of pages
+  //Terminate document
+  vnb := Self.page;
+  if not (Self.DocAliasNbPages = '') then
+  begin
+    //Replace number of pages
     for vn := 1 to vnb do
-			Self.sspages[vn] := StringReplace(Self.sspages[vn],Self.ssAliasNbPages,IntToStr(vnb),[]);
-	end;
-	if(Self.ssDefOrientation = 'P') then
-	begin
-		vwPt := Self.ssfwPt;
-		vhPt := Self.ssfhPt;
-	end
-	else
-	begin
-		vwPt := Self.ssfhPt;
-		vhPt := Self.ssfwPt;
-	end;
-  if (Self.sscompress) then vfilter := '/Filter /FlateDecode ' else vfilter := '';
+      Self.pages[vn] := StringReplace(Self.pages[vn], Self.DocAliasNbPages,
+        IntToStr(vnb), []);
+  end;
+  if (JORIENTATION[Self.DefOrientation] = 'P') then
+  begin
+    vwPt := Self.fwPt;
+    vhPt := Self.fhPt;
+  end
+  else
+  begin
+    vwPt := Self.fhPt;
+    vhPt := Self.fwPt;
+  end;
+  if (Self.compress) then
+    vfilter := '/Filter /FlateDecode '
+  else
+    vfilter := '';
   for vn := 1 to vnb do
-	begin
-		//Page
-		_newobj();
-		_out('<</Type /Page');
-		_out('/Parent 1 0 R');
-		if(Self.ssOrientationChanges[vn]) then
-			_out('/MediaBox [0 0 ' + FloatToStr(vhPt) + ' ' + FloatToStr(vwPt) + ']');
-		_out('/Resources 2 0 R');
-		_out('/Contents ' + IntToStr(Self.ssn + 1) + ' 0 R>>');
-		_out('endobj');
-		//Page content
-    if (Self.sscompress) then vp := Compress(Self.sspages[vn]) else vp := Self.sspages[vn];
-		_newobj();
-		_out('<<' + vfilter + '/Length ' + IntToStr(Length(vp)) + '>>');
-		_out('stream');
-		_out(vp + 'endstream');
-		_out('endobj');
-	end;
-	//Fonts
-	vnf := Self.ssn;
-	// reset(Self.ssfonts);
- // while(list(ssname) = each(Self.ssfonts)) do
-  for vu := 0 to Length(Self.ssfonts) - 1 do
-	begin
-		_newobj();
-		_out('<</Type /Font');
-		_out('/Subtype /Type1');
-		_out('/BaseFont /' +  Self.ssfonts[vu].nome);
-		if((Self.ssfonts[vu].nome <> 'Symbol') and (Self.ssfonts[vu].nome <> 'ZapfDingbats')) then
-			_out('/Encoding /WinAnsiEncoding');
-		_out('>>');
-		_out('endobj');
-	end;
-	//Images
-	vni := Self.ssn;
-//	reset(Self.ssimages);
-//	while(list(vfile,vinfo) = each(Self.ssimages)) do
-	for vu := 0 to Length(Self.ssimages) - 1 do
-	begin
-		_newobj();
-		_out('<</Type /XObject');
-		_out('/Subtype /Image');
-		_out('/Width ' + FloatToStr(Self.ssimages[vu].w));
-		_out('/Height ' + FloatToStr(Self.ssimages[vu].h));
-		{if(vinfo['cs'] = 'Indexed') then
-			_out('/ColorSpace [/Indexed /DeviceRGB ' + (strlen(vinfo['pal'])/3-1) + ' ' + (Self.ssn+1) + ' 0 R]');
-		else}
-			_out('/ColorSpace /' + Self.ssimages[vu].cs);
-		_out('/BitsPerComponent ' + IntToStr(Self.ssimages[vu].bpc));
-		_out('/Filter /' + Self.ssimages[vu].f);
-		{if(isset(vinfo['parms'])) then
-			_out(vinfo['parms']);}
-		{if(isset(vinfo['trns']) and is_array(vinfo['trns'])) then
-		begin
-			vtrns := '';
-			for(vi := 0;vi<count(vinfo['trns']);vi++) do
-				vtrns  +=  vinfo['trns'][vi] + ' ' + vinfo['trns'][vi] + ' ';
-			_out('/Mask [' + vtrns + ']');
-		end;}
+  begin
+    //Page
+    _newobj();
+    _out('<</Type /Page');
+    _out('/Parent 1 0 R');
+    if (Self.OrientationChanges[vn]) then
+      _out('/MediaBox [0 0 ' + FloatToStr(vhPt) + ' ' + FloatToStr(vwPt) + ']');
+    _out('/Resources 2 0 R');
+    _out('/Contents ' + IntToStr(Self.numObj + 1) + ' 0 R>>');
+    _out('endobj');
+    //Page content
+    if (Self.compress) then
+      vp := GzCompress(Self.pages[vn])
+    else
+      vp := Self.pages[vn];
+    _newobj();
+    _out('<<' + vfilter + '/Length ' + IntToStr(Length(vp)) + '>>');
+    _out('stream');
+    _out(vp + 'endstream');
+    _out('endobj');
+  end;
+  //Fonts
+  vnf := Self.numObj;
+  for vu := 0 to Length(Self.pFonts) - 1 do
+  begin
+    _newobj();
+    _out('<</Type /Font');
+    _out('/Subtype /Type1');
+    _out('/BaseFont /' + Self.pFonts[vu].name);
+    if ((Self.pFonts[vu].name <> 'Symbol') and (Self.pFonts[vu].name <>
+      'ZapfDingbats')) then
+      _out('/Encoding /WinAnsiEncoding');
+    _out('>>');
+    _out('endobj');
+  end;
+  //Images
+  vni := Self.numObj;
+  for vu := 0 to Length(Self.pImages) - 1 do
+  begin
+    _newobj();
+    _out('<</Type /XObject');
+    _out('/Subtype /Image');
+    _out('/Width ' + FloatToStr(Self.pImages[vu].w));
+    _out('/Height ' + FloatToStr(Self.pImages[vu].h));
+    _out('/ColorSpace /' + Self.pImages[vu].cs);
+    _out('/BitsPerComponent ' + IntToStr(Self.pImages[vu].bpc));
+    _out('/Filter /' + Self.pImages[vu].f);
+    _out('/Length ' + IntToStr(Self.pImages[vu].imgSource.Size) + '>>');
+    _out('stream');
+    //_out(vinfo['data']);
+    Self.pImages[vu].imgSource.Position := 0;
+    Self.buffer.CopyFrom(Self.pImages[vu].imgSource, Self.pImages[vu].imgSource.Size);
+    _out(#10 + 'endstream');
+    _out('endobj');
+  end;
+  //Pages root
+  Self.offsets[1] := Self.buffer.Size;
+  _out('1 0 obj');
+  _out('<</Type /Pages');
+  vkids := '/Kids [';
 
-    _out('/Length ' + IntToStr(Self.ssimages[vu].dados.Size) + '>>');
-		_out('stream');
-		//_out(vinfo['data']);
-    Self.ssimages[vu].dados.Position := 0;
-    Self.ssbuffer.CopyFrom(Self.ssimages[vu].dados,Self.ssimages[vu].dados.Size);
-		_out(#10+'endstream');
-		_out('endobj');
-		//Palette
-		{if(vinfo['cs'] = 'Indexed') then
-		begin
-			_newobj();
-			_out('<</Length ' + strlen(vinfo['pal']) + '>>');
-			_out('stream');
-			_out(vinfo['pal']);
-			_out('endstream');
-			_out('endobj');
-		end; }
-	end;
-	//Pages root
-	Self.ssoffsets[1] := Self.ssbuffer.Size;
-	_out('1 0 obj');
-	_out('<</Type /Pages');
-	vkids := '/Kids [';
+  for vi := 0 to Self.page - 1 do
+    vkids += IntToStr(3 + 2 * vi) + ' 0 R ';
 
-  for vi := 0 to Self.sspage - 1 do
-  	vkids  +=  IntToStr(3 + 2 * vi) + ' 0 R ';
-
-	_out(vkids + ']');
-	_out('/Count ' + IntToStr(Self.sspage));
-	_out('/MediaBox [0 0 ' + FloatToStr(vwPt) + ' ' + FloatToStr(vhPt) + ']');
-	_out('>>');
-	_out('endobj');
-	//Resources
-	Self.ssoffsets[2] := Self.ssbuffer.Size;
-	_out('2 0 obj');
-	_out('<</ProcSet [/PDF /Text /ImageB /ImageC /ImageI]');
-	_out('/Font <<');
-	for vi := 1 to Length(Self.ssfonts) do
-		_out('/F' + IntToStr(vi) + ' ' + IntToStr(vnf + vi) + ' 0 R');
-	_out('>>');
-	if(Length(Self.ssimages) > 0) then
-	begin
-		_out('/XObject <<');
-		vnbpal := 0;
-//	reset(Self.ssimages);
-//		while(list(,vinfo) = each(Self.ssimages)) do
-    for vu := 0 to Length(Self.ssimages) - 1 do
-		begin
-			_out('/I' + IntToStr(Self.ssimages[vu].n) + ' ' + IntToStr(vni + Self.ssimages[vu].n + vnbpal) + ' 0 R');
-			if(Self.ssimages[vu].cs = 'Indexed') then
-				vnbpal := vnbpal + 1;
-		end;
-		_out('>>');
-	end;
-	_out('>>');
-	_out('endobj');
-	//Info
-	_newobj();
-	_out('<</Producer (FPDF ' + FPDF_VERSION + ')');
-	if(Self.sstitle <> '') then
-		_out('/Title (' + _escape(Self.sstitle) + ')');
-	if(Self.sssubject <> '') then
-		_out('/Subject (' + _escape(Self.sssubject) + ')');
-	if(Self.ssauthor <> '') then
-		_out('/Author (' + _escape(Self.ssauthor) + ')');
-	if(Self.sskeywords <> '') then
-		_out('/Keywords (' + _escape(Self.sskeywords) + ')');
-	if(Self.sscreator <> '') then
-		_out('/Creator (' + _escape(Self.sscreator) + ')');
-	_out('/CreationDate (D:' + FormatDateTime('ddmmyyyhhmmss',date) + ')>>');
-	_out('endobj');
-	//Catalog
-	_newobj();
-	_out('<</Type /Catalog');
-	if(Self.ssDisplayMode = 'fullpage') then
-		_out('/OpenAction [3 0 R /Fit]')
-	else if(Self.ssDisplayMode = 'fullwidth') then
-		_out('/OpenAction [3 0 R /FitH null]')
-	else if(Self.ssDisplayMode = 'real') then
-		_out('/OpenAction [3 0 R /XYZ null null 1]')
-	else
-		_out('/OpenAction [3 0 R /XYZ null null ' + FloatToStr(StrToInt(Self.ssDisplayMode) / 100) + ']');
-	_out('/Pages 1 0 R>>');
-	_out('endobj');
-	//Cross-ref
-	vo := Self.ssbuffer.Size;
-	_out('xref');
-	_out('0 ' + IntToStr(Self.ssn + 1));
-	_out('0000000000 65535 f ');
-  for vi := 1 to Self.ssn do
-		_out(Format('%.10d 00000 n ',[Self.ssoffsets[vi]]));
-	//Trailer
-	_out('trailer');
-	_out('<</Size ' + IntToStr(Self.ssn + 1));
-	_out('/Root ' + IntToStr(Self.ssn) + ' 0 R');
-	_out('/Info ' + IntToStr(Self.ssn - 1) + ' 0 R>>');
-	_out('startxref');
-	_out(IntToStr(vo));
-	_out('%%EOF');
-	Self.ssstate := 3;
-  SetDecimal;
+  _out(vkids + ']');
+  _out('/Count ' + IntToStr(Self.page));
+  _out('/MediaBox [0 0 ' + FloatToStr(vwPt) + ' ' + FloatToStr(vhPt) + ']');
+  _out('>>');
+  _out('endobj');
+  //Resources
+  Self.offsets[2] := Self.buffer.Size;
+  _out('2 0 obj');
+  _out('<</ProcSet [/PDF /Text /ImageB /ImageC /ImageI]');
+  _out('/Font <<');
+  for vi := 1 to Length(Self.pFonts) do
+    _out('/F' + IntToStr(vi) + ' ' + IntToStr(vnf + vi) + ' 0 R');
+  _out('>>');
+  if (Length(Self.pImages) > 0) then
+  begin
+    _out('/XObject <<');
+    vnbpal := 0;
+    for vu := 0 to Length(Self.pImages) - 1 do
+    begin
+      _out('/I' + IntToStr(Self.pImages[vu].n) + ' ' +
+        IntToStr(vni + Self.pImages[vu].n + vnbpal) + ' 0 R');
+      if (Self.pImages[vu].cs = 'Indexed') then
+        vnbpal := vnbpal + 1;
+    end;
+    _out('>>');
+  end;
+  _out('>>');
+  _out('endobj');
+  //Info
+  _newobj();
+  _out('<</Producer (Free JPDF Pascal ' + FREE_JPDF_PASCAL_VERSION + ')');
+  if (Self.DocTitle <> '') then
+    _out('/Title (' + _escape(Self.DocTitle) + ')');
+  if (Self.DocSubject <> '') then
+    _out('/Subject (' + _escape(Self.DocSubject) + ')');
+  if (Self.DocAuthor <> '') then
+    _out('/Author (' + _escape(Self.DocAuthor) + ')');
+  if (Self.DocKeywords <> '') then
+    _out('/Keywords (' + _escape(Self.DocKeywords) + ')');
+  if (Self.DocCreator <> '') then
+    _out('/Creator (' + _escape(Self.DocCreator) + ')');
+  _out('/CreationDate (D:' + FormatDateTime('dd-mm-yyy', date) + ' ' + FormatDateTime('hh:mm:ss', now) + ')>>');
+  _out('endobj');
+  //Catalog
+  _newobj();
+  _out('<</Type /Catalog');
+  if (Self.DocDisplayMode = 'fullpage') then
+    _out('/OpenAction [3 0 R /Fit]')
+  else if (Self.DocDisplayMode = 'fullwidth') then
+    _out('/OpenAction [3 0 R /FitH null]')
+  else if (Self.DocDisplayMode = 'real') then
+    _out('/OpenAction [3 0 R /XYZ null null 1]')
+  else
+    _out('/OpenAction [3 0 R /XYZ null null ' +
+      FloatToStr(StrToInt(Self.DocDisplayMode) / 100) + ']');
+  _out('/Pages 1 0 R>>');
+  _out('endobj');
+  //Cross-ref
+  vo := Self.buffer.Size;
+  _out('xref');
+  _out('0 ' + IntToStr(Self.numObj + 1));
+  _out('0000000000 65535 f ');
+  for vi := 1 to Self.numObj do
+    _out(Format('%.10d 00000 n ', [Self.offsets[vi]]));
+  //Trailer
+  _out('trailer');
+  _out('<</Size ' + IntToStr(Self.numObj + 1));
+  _out('/Root ' + IntToStr(Self.numObj) + ' 0 R');
+  _out('/Info ' + IntToStr(Self.numObj - 1) + ' 0 R>>');
+  _out('startxref');
+  _out(IntToStr(vo));
+  _out('%%EOF');
+  Self.state := 3;
 end;
 
-procedure TJPFpdf._beginpage(ssorientation: string);
+procedure TJPFpdf._beginpage(orientation: string);
 begin
-  SetDecimal('.');
-	Self.sspage := Self.sspage + 1;
-  SetLength(Self.sspages, Length(Self.sspages) + 1);
-	Self.sspages[Self.sspage] := '';
-	Self.ssstate := 2;
-	Self.ssx := Self.sslMargin;
-	Self.ssy := Self.sstMargin;
-	Self.sslasth := 0;
-	Self.ssFontFamily := '';
-	//Page orientation
-	if (ssorientation = '') then
-		ssorientation := Self.ssDefOrientation
-	else
-	begin
-		ssorientation := UpperCase(ssorientation);
-//    SetLength(Self.ssOrientationChanges,Length(Self.ssOrientationChanges) + 1);
-		if(ssorientation <> Self.ssDefOrientation) then
-			Self.ssOrientationChanges[Self.sspage] := true else
-        Self.ssOrientationChanges[Self.sspage] := false;
-	end;
-	if(ssorientation <> Self.ssCurOrientation) then
-	begin
-		//Change orientation
-		if(ssorientation = 'P') then
-		begin
-			Self.sswPt := Self.ssfwPt;
-			Self.sshPt := Self.ssfhPt;
-			Self.ssw := Self.ssfw;
-			Self.ssh := Self.ssfh;
-		end
-		else
-		begin
-			Self.sswPt := Self.ssfhPt;
-			Self.sshPt := Self.ssfwPt;
-			Self.ssw := Self.ssfh;
-			Self.ssh := Self.ssfw;
-		end;
-		Self.ssPageBreakTrigger := Self.ssh - Self.ssbMargin;
-		Self.ssCurOrientation := ssorientation;
-	end;
-	//Set transformation matrix
-	_out(FloatToStrF(Self.ssk, ffNumber, 14,6) + ' 0 0 ' + FloatToStrF(Self.ssk, ffNumber, 14,6) + ' 0 ' + FloatToStr(Self.sshPt) + ' cm');
-  SetDecimal;
+  Self.page := Self.page + 1;
+  SetLength(Self.pages, Length(Self.pages) + 1);
+  Self.pages[Self.page] := '';
+  Self.state := 2;
+  Self.cpX := Self.lMargin;
+  Self.cpY := Self.tMargin;
+  Self.hLasth := 0;
+  Self.cFontFamily := ffTimes;
+  //Page orientation
+  if (orientation = #0) then
+    orientation := JORIENTATION[Self.DefOrientation]
+  else
+  begin
+    if (orientation <> JORIENTATION[Self.DefOrientation]) then
+      Self.OrientationChanges[Self.page] := True
+    else
+      Self.OrientationChanges[Self.page] := False;
+  end;
+  if (orientation <> JORIENTATION[Self.CurOrientation]) then
+  begin
+    //Change orientation
+    if (orientation = 'P') then
+    begin
+      Self.wPt := Self.fwPt;
+      Self.hPt := Self.fhPt;
+      Self.dw := Self.fw;
+      Self.dh := Self.fh;
+      Self.CurOrientation := poPortrait;
+    end
+    else
+    begin
+      Self.wPt := Self.fhPt;
+      Self.hPt := Self.fwPt;
+      Self.dw := Self.fh;
+      Self.dh := Self.fw;
+      Self.CurOrientation := poLandscape;
+    end;
+    Self.PageBreakTrigger := Self.dh - Self.bMargin;
+  end;
+  //Set transformation matrix
+  _out(FloatToStrF(Self.pgK, ffNumber, 14, 6) + ' 0 0 ' +
+    FloatToStrF(Self.pgK, ffNumber, 14, 6) + ' 0 ' + FloatToStr(Self.hPt) + ' cm');
 end;
 
 procedure TJPFpdf._endpage;
 begin
-	//End of page contents
-	Self.ssstate := 1;
+  //End of page contents
+  Self.state := 1;
 end;
 
 procedure TJPFpdf._newobj;
 begin
-	//Begin a new object
- 	Self.ssn := Self.ssn + 1;
-	Self.ssoffsets[Self.ssn] := Self.ssbuffer.Size;
-	_out(IntToStr(Self.ssn) + ' 0 obj');
+  //Begin a new object
+  Self.numObj := Self.numObj + 1;
+  Self.offsets[Self.numObj] := Self.buffer.Size;
+  _out(IntToStr(Self.numObj) + ' 0 obj');
 end;
 
-function TJPFpdf._setfontsize(sssize: double): boolean;
+function TJPFpdf._setfontsize(fSize: double): boolean;
 var
   vfontname: string;
-  n,i: integer;
+  n, i: integer;
 begin
-  SetDecimal('.');
   n := 0;
-	//Test if size already selected
-	if(Self.ssFontSizePt = sssize) then
-		Exit;
-  Result := true;
-	//Select it
-	vfontname := DevolveNomeFone(Self.ssFontFamily + Self.ssFontStyle);
-	Self.ssFontSizePt := sssize;
-	Self.ssFontSize := StrToFloat(FloatToStrF(sssize / Self.ssk, ffNumber, 14, 2));
+  //Test if size already selected
+  if (Self.cFontSizePt = fSize) then
+    Exit;
+  Result := True;
+  //Select it
+  if (Self.cFontFamily = ffTimes) then
+    if (Self.cFontStyle = fsNormal) then vfontname := 'Times-Roman' else
+      vfontname := JFONTFAMILY[Self.cFontFamily] + StringReplace(JFONTSTYLE[Self.cFontStyle],'Oblique','Italic',[rfReplaceAll])
+  else
+    vfontname := JFONTFAMILY[Self.cFontFamily] + JFONTSTYLE[Self.cFontStyle];
+  Self.cFontSizePt := fSize;
+  Self.cFontSize := StrToFloat(FloatToStrF(fSize / Self.pgK, ffNumber, 14, 2));
 
-  for i := 0 to Length(Self.ssfonts)-1 do
+  for i := 0 to Length(Self.pFonts) - 1 do
   begin
-    if  (Self.ssfonts[i].nome = vfontname) then begin
-      n := Self.ssfonts[i].numero;
+    if (Self.pFonts[i].name = vfontname) then
+    begin
+      n := Self.pFonts[i].number;
       break;
     end;
   end;
-  if (n = 0) then Error('Fonte não foi encontrada: ' + vfontname);
-  if(Self.sspage > 0) then
-		_out('BT /F' + IntToStr(n) + ' ' + FloatToStrF(Self.ssFontSize, ffNumber, 14, 2) + ' Tf ET');
+  if (n = 0) then
+    Error('Fonte não foi encontrada: ' + vfontname);
+  if (Self.page > 0) then
+    _out('BT /F' + IntToStr(n) + ' ' + FloatToStrF(Self.cFontSize,
+      ffNumber, 14, 2) + ' Tf ET');
 end;
 
-function TJPFpdf._parsejpg(ssfile: string): TMemoryStream;
+function TJPFpdf._escape(sText: string): string;
 begin
-  // Implementar na próxima versão
+  //Add \ before \, ( and )
+  Result := StringReplace(StringReplace(StringReplace(sText, '\', '\\', [rfReplaceAll]),
+    ')', '\)', [rfReplaceAll]), '(', '\(', [rfReplaceAll]);
 end;
 
-function TJPFpdf._parsepng(ssfile: string): TMemoryStream;
+procedure TJPFpdf._out(sText: string);
 begin
-  // Implementar na próxima versão
-end;
-
-function TJPFpdf._freadint(ssf: string): integer;
-begin
-  // Provavelmente não será usado ou será modificado
-end;
-
-function TJPFpdf._escape(sss: string): string;
-begin
-	//Add \ before \, ( and )
-  Result := StringReplace(StringReplace(StringReplace(sss,'\','\\',[rfReplaceAll]),')','\)',[rfReplaceAll]),'(','\(',[rfReplaceAll]);
-end;
-
-procedure TJPFpdf._out(sss: string);
-begin
-	//Add a line to the document
-	if(Self.ssstate = 2) then
-		Self.sspages[Self.sspage]  +=  sss + #10
-	else begin
-    sss := sss + #10;
-		Self.ssbuffer.Write(Pointer(sss)^,Length(sss) * SizeOf(char));
+  //Add a line to the document
+  if (Self.state = 2) then
+    Self.pages[Self.page] += sText + #10
+  else
+  begin
+    sText := sText + #10;
+    Self.buffer.Write(Pointer(sText)^, Length(sText) * SizeOf(char));
   end;
 end;
 
-function TJPFpdf.Compress(StrIn: string; CompLevel: TCompressionLevel): string;
+function TJPFpdf.FloatToStr(Value: Double): String;
+begin
+  Result := SysUtils.FloatToStr(Value, TPDFFormatSetings);
+end;
+
+function TJPFpdf.GzCompress(StrIn: string; CompLevel: TCompressionLevel): string;
 var
   cs: TCompressionStream;
   ss2: TStringStream;
@@ -1349,7 +1367,7 @@ begin
   end;
 end;
 
-function TJPFpdf.Decompress(StrIn: string): string;
+function TJPFpdf.GzDecompress(StrIn: string): string;
 const
   bufsize = 65536;
 var
@@ -1380,263 +1398,234 @@ begin
   end;
 end;
 
-constructor TJPFpdf.Fpdf(ssorientation: string; ssunit: string; ssformat: string);
+function TJPFpdf._dounderline(vX, vY: double; vText: string): string;
 var
-  aformat: array[0..1] of double;
+  vw: double;
+  vsp: integer;
+  i: Integer;
+  up,ut: integer;
+begin
+	//Underline text
+  vsp := 0;
+  vText := Copy(vText,0,Length(vText)-1);
+  for i := 0 to Length(vText) do
+    if (vText[i] = ' ') then vsp := vsp + 1;
+  up := -100;
+  ut := 50;
+	vw := Self.GetStringWidth(vText) + Self.pgWs * vsp;
+  Result := format('%.2F -%.2F %.2F -%.2F re f',[vX,(vY - up/1000 * Self.cFontSize),vw,(ut/1000 * Self.cFontSize)]);
+end;
+
+constructor TJPFpdf.Create(orientation: TPDFOrientation; pageUnit: TPDFUnit; pageFormat: TPDFPageFormat);
+var
   ssmargin: double;
 begin
   //Initialization of properties
-  Self.DefDecimal := FormatSettings.DecimalSeparator;
-  SetDecimal('.');
-  Self.sspage := 0;
-  Self.ssn := 2;
-  Self.ssbuffer := TMemoryStream.Create;
-//  Self.ssbuffer := TMemoryStream.Create;
-  Self.ssbuffer.Position := 0;
-  SetLength(Self.sspages, 2);
-  SetLength(Self.ssOrientationChanges, 64000000);
-  SetLength(Self.ssoffsets, 64000000);
-  Self.ssstate := 0;
-  //SetLength(Self.ssfonts, 14);
-//  SetLength(Self.ssimages, 2);
-  Self.ssInFooter := False;
-  Self.ssFontFamily := '';
-  Self.ssFontStyle := '';
-  Self.ssFontSizePt := 12;
-  Self.ssDrawColor := '0 G';
-  Self.ssFillColor := '0 g';
-  Self.ssTextColor := '0 g';
-  Self.ssColorFlag := False;
-  Self.ssws := 0;
-  //Font names
-  SetLength(Self.ssfontnames, 14);
-  Self.ssfontnames[0] := 'Courier'; // courier
-  Self.ssfontnames[1] := 'Courier-Bold'; // courierB
-  Self.ssfontnames[2] := 'Courier-Oblique'; // courierI
-  Self.ssfontnames[3] := 'Courier-BoldOblique'; // courierBI
-  Self.ssfontnames[4] := 'Helvetica'; // helvetica
-  Self.ssfontnames[5] := 'Helvetica-Bold'; // helveticaB
-  Self.ssfontnames[6] := 'Helvetica-Oblique'; // helveticaI
-  Self.ssfontnames[7] := 'Helvetica-BoldOblique'; // helveticaBI
-  Self.ssfontnames[8] := 'Times-Roman'; // times
-  Self.ssfontnames[9] := 'Times-Bold'; // timesB
-  Self.ssfontnames[10] := 'Times-Italic'; // timesI
-  Self.ssfontnames[11] := 'Times-BoldItalic'; // timesBI
-  Self.ssfontnames[12] := 'Symbol'; // symbol
-  Self.ssfontnames[13] := 'ZapfDingbats'; // zapfdingbats
+  Self.page := 0;
+  Self.numObj := 2;
+  Self.buffer := TMemoryStream.Create;
+  Self.buffer.Position := 0;
+  SetLength(Self.pages, 2);
+  SetLength(Self.OrientationChanges, 64000000);
+  SetLength(Self.offsets, 64000000);
+  Self.state := 0;
+  Self.InFooter := False;
+  Self.cFontFamily := ffTimes;
+  Self.cFontStyle := fsNormal;
+  Self.cFontSizePt := 12;
+  Self.pDrawColor := '0 G';
+  Self.pFillColor := '0 g';
+  Self.pTextColor := '0 g';
+  Self.pColorFlag := False;
+  Self.pUnderlineFlag := False;
+  Self.pgWs := 0;
   //Fonts Char Sizes
-  ssfpdf_charwidths[0] := FONT_COURIER_FULL;
-  ssfpdf_charwidths[1] := FONT_COURIER_FULL;
-  ssfpdf_charwidths[2] := FONT_COURIER_FULL;
-  ssfpdf_charwidths[3] := FONT_COURIER_FULL;
-  ssfpdf_charwidths[4] := FONT_HELVETICA_ARIAL;
-  ssfpdf_charwidths[5] := FONT_HELVETICA_ARIAL_BOLD;
-  ssfpdf_charwidths[6] := FONT_HELVETICA_ARIAL_ITALIC;
-  ssfpdf_charwidths[7] := FONT_HELVETICA_ARIAL_BOLD_ITALIC;
-  ssfpdf_charwidths[8] := FONT_TIMES;
-  ssfpdf_charwidths[9] := FONT_TIMES_BOLD;
-  ssfpdf_charwidths[10] := FONT_TIMES_ITALIC;
-  ssfpdf_charwidths[11] := FONT_TIMES_BOLD_ITALIC;
-  ssfpdf_charwidths[12] := FONT_SYMBOL;
-  ssfpdf_charwidths[13] := FONT_ZAPFDINGBATS;
+  Jpdf_charwidths[ffCourier][fsNormal] := FONT_COURIER_FULL;
+  Jpdf_charwidths[ffHelvetica][fsNormal] := FONT_HELVETICA_ARIAL;
+  Jpdf_charwidths[ffHelvetica][fsBold] := FONT_HELVETICA_ARIAL_BOLD;
+  Jpdf_charwidths[ffHelvetica][fsItalic] := FONT_HELVETICA_ARIAL_ITALIC;
+  Jpdf_charwidths[ffHelvetica][fsBoldItalic] := FONT_HELVETICA_ARIAL_BOLD_ITALIC;
+  Jpdf_charwidths[ffTimes][fsNormal] := FONT_TIMES;
+  Jpdf_charwidths[ffTimes][fsBold] := FONT_TIMES_BOLD;
+  Jpdf_charwidths[ffTimes][fsItalic] := FONT_TIMES_ITALIC;
+  Jpdf_charwidths[ffTimes][fsBoldItalic] := FONT_TIMES_BOLD_ITALIC;
+  Jpdf_charwidths[ffSymbol][fsNormal] := FONT_SYMBOL;
+  Jpdf_charwidths[ffZapfdingbats][fsNormal] := FONT_ZAPFDINGBATS;
   //Scale factor
-  if (ssunit = 'pt') then
-    Self.ssk := 1
-  else if (ssunit = 'mm') then
-    Self.ssk := 72 / 25.4
-  else if (ssunit = 'cm') then
-    Self.ssk := 72 / 2.54
-  else if (ssunit = 'in') then
-    Self.ssk := 72
-  else
-    Error('Incorrect unit: ' + ssunit);
+  Self.pgK := JUNIT[pageUnit];
   //Page format
-{  if(is_string(ssformat)) then
+{  if(is_string(pageFormat)) then
   begin}
-  ssformat := LowerCase(ssformat);
-  if (ssformat = 'a3') then
-  begin
-    aformat[0] := 841.89;
-    aformat[1] := 1190.55;
-  end
-  else if (ssformat = 'a4') then
-  begin
-    aformat[0] := 595.28;
-    aformat[1] := 841.89;
-  end
-  else if (ssformat = 'a5') then
-  begin
-    aformat[0] := 420.94;
-    aformat[1] := 595.28;
-  end
-  else if (ssformat = 'letter') then
-  begin
-    aformat[0] := 612;
-    aformat[1] := 792;
-  end
-  else if (ssformat = 'legal') then
-  begin
-    aformat[0] := 612;
-    aformat[1] := 1008;
-  end
-  else
-    Error('Unknown page format: ' + ssformat);
-  Self.ssfwPt := aformat[0];
-  Self.ssfhPt := aformat[1];
-{  end    //                  TAMANHO PERSONALIZADO ssformat sintaxe '9999.99,9999.99' largura,altura
+  Self.fwPt := JFORMAT_W[pageFormat];
+  Self.fhPt := JFORMAT_H[pageFormat];
+{  end    //                  TAMANHO PERSONALIZADO pageFormat sintaxe '9999.99,9999.99' largura,altura
   else
   begin
-    Self.ssfwPt := round(ssformat[0]*Self.ssk,2);
-    Self.ssfhPt := round(ssformat[1]*Self.ssk,2);
+    Self.fwPt := round(pageFormat[0]*Self.pgK,2);
+    Self.fhPt := round(pageFormat[1]*Self.pgK,2);
   end;}
-  Self.ssfw := StrToFloat(FloatToStrF(Self.ssfwPt / Self.ssk, ffNumber, 14, 2));
-  Self.ssfh := StrToFloat(FloatToStrF(Self.ssfhPt / Self.ssk, ffNumber, 14, 2));
+  Self.fw := StrToFloat(FloatToStrF(Self.fwPt / Self.pgK, ffNumber, 14, 2));
+  Self.fh := StrToFloat(FloatToStrF(Self.fhPt / Self.pgK, ffNumber, 14, 2));
   //Page orientation
-  ssorientation := LowerCase(ssorientation);
-  if ((ssorientation = 'p') or (ssorientation = 'portrait')) then
+  if (orientation in [poPortrait, poDefault]) then
   begin
-    Self.ssDefOrientation := 'P';
-    Self.sswPt := Self.ssfwPt;
-    Self.sshPt := Self.ssfhPt;
-  end
-  else if ((ssorientation = 'l') or (ssorientation = 'landscape')) then
+    Self.DefOrientation := orientation;
+    Self.wPt := Self.fwPt;
+    Self.hPt := Self.fhPt;
+  end else
   begin
-    Self.ssDefOrientation := 'L';
-    Self.sswPt := Self.ssfhPt;
-    Self.sshPt := Self.ssfwPt;
-  end
-  else
-    Error('Incorrect orientation: ' + ssorientation);
-  Self.ssCurOrientation := Self.ssDefOrientation;
-  // StrToFloat(FloatToStrF(Self.ssfwPt/Self.ssk,ffNumber,14,2));
-  Self.ssw := StrToFloat(FloatToStrF(Self.sswPt / Self.ssk, ffNumber, 14, 2));
-  Self.ssh := StrToFloat(FloatToStrF(Self.sshPt / Self.ssk, ffNumber, 14, 2));
+    Self.DefOrientation := orientation;
+    Self.wPt := Self.fhPt;
+    Self.hPt := Self.fwPt;
+  end;
+  Self.CurOrientation := Self.DefOrientation;
+  Self.dw := StrToFloat(FloatToStrF(Self.wPt / Self.pgK, ffNumber, 14, 2));
+  Self.dh := StrToFloat(FloatToStrF(Self.hPt / Self.pgK, ffNumber, 14, 2));
   //Page margins (1 cm)
-  ssmargin := StrToFloat(FloatToStrF(28.35 / Self.ssk, ffNumber, 14, 2));
+  ssmargin := StrToFloat(FloatToStrF(28.35 / Self.pgK, ffNumber, 14, 2));
   SetMargins(ssmargin, ssmargin);
   //Interior cell margin (1 mm)
-  Self.sscMargin := ssmargin / 10;
+  Self.cMargin := ssmargin / 10;
   //Line width (0.2 mm)
-  Self.ssLineWidth := StrToFloat(FloatToStrF(0.567 / Self.ssk, ffNumber, 14, 3));
+  Self.pLineWidth := StrToFloat(FloatToStrF(0.567 / Self.pgK, ffNumber, 14, 3));
   //Automatic page break
   SetAutoPageBreak(True, 2 * ssmargin);
   //Full width display mode
-  SetDisplayMode('fullwidth');
+  SetDisplayMode(dmFullWidth);
   //Compression
   SetCompression(False);
-  SetDecimal;
 end;
 
-procedure TJPFpdf.SetDecimal(Decimal: char);
-begin
-  if ((Decimal = '.') or (Decimal = ',')) then
-    FormatSettings.DecimalSeparator := '.'
-  else
-    FormatSettings.DecimalSeparator := DefDecimal;
-end;
-
-function TJPFpdf.ValidaFonte(fonte: string): boolean;
-begin
-  if (
-  (fonte = 'courier') or
-  (fonte = 'courierB') or
-  (fonte = 'courierI') or
-  (fonte = 'courierBI') or
-  (fonte = 'helvetica') or
-  (fonte = 'helveticaB') or
-  (fonte = 'helveticaI') or
-  (fonte = 'helveticaBI') or
-  (fonte = 'times') or
-  (fonte = 'timesB') or
-  (fonte = 'timesI') or
-  (fonte = 'timesBI') or
-  (fonte = 'symbol') or
-  (fonte = 'zapfdingbats')
-  ) then Result := true else Result := false;
-end;
-
-function TJPFpdf.FonteFoiUsada(fonte: string): boolean;
+function TJPFpdf.FontWasUsed(font: string): boolean;
 var
   i: integer;
 begin
-  Result := false;
-  if (ValidaFonte(fonte)) then begin
-    for i := 0 to Length(Self.ssfonts)-1 do
+  Result := False;
+  for i := 0 to Length(Self.pFonts) - 1 do
+  begin
+    if (Self.pFonts[i].name = font) then
     begin
-      if  (Self.ssfonts[i].nome = DevolveNomeFone(fonte)) then begin
-        Result := true;
-        break;
-      end;
+      Result := True;
+      break;
     end;
   end;
 end;
 
-function TJPFpdf.DevolveNomeFone(nomeAbreviado: string): string;
-begin
-  Result := '';
-  if (nomeAbreviado = 'courier') then Result := 'Courier' else
-  if (nomeAbreviado = 'courierB')  then Result := 'Courier-Bold' else
-  if (nomeAbreviado = 'courierI')  then Result := 'Courier-Oblique' else
-  if (nomeAbreviado = 'courierBI')  then Result := 'Courier-BoldOblique' else
-  if (nomeAbreviado = 'helvetica')  then Result := 'Helvetica' else
-  if (nomeAbreviado = 'helveticaB')  then Result := 'Helvetica-Bold' else
-  if (nomeAbreviado = 'helveticaI')  then Result := 'Helvetica-Oblique' else
-  if (nomeAbreviado = 'helveticaBI')  then Result := 'Helvetica-BoldOblique' else
-  if (nomeAbreviado = 'times')  then Result := 'Times-Roman' else
-  if (nomeAbreviado = 'timesB')  then Result := 'Times-Bold' else
-  if (nomeAbreviado = 'timesI')  then Result := 'Times-Italic' else
-  if (nomeAbreviado = 'timesBI')  then Result := 'Times-BoldItalic' else
-  if (nomeAbreviado = 'symbol')  then Result := 'Symbol' else
-  if (nomeAbreviado = 'zapfdingbats')  then Result := 'ZapfDingbats' else
-    Error('Nome abreviado de fonte inválido: ' + nomeAbreviado);
-end;
-
-function TJPFpdf.GetDadosImagem(imgFile: string): TJPDadosImage;
+function TJPFpdf.GetInfoImage(imgFile: string): TJPImageInfo;
 var
   ir: TFPCustomImageReader;
   jw: TFPWriterJPEG;
-  im:  TFPMemoryImage;
+  im: TFPMemoryImage;
   ex: string;
 begin
-  ex := StringReplace(UpperCase(ExtractFileExt(imgFile)),'.','',[rfReplaceAll]);
-  if (ex = '') then Error('Arquivo sem extensão!');
+  ex := StringReplace(UpperCase(ExtractFileExt(imgFile)), '.', '', [rfReplaceAll]);
+  if (ex = '') then
+    Error('File without an extension!');
   try
-  if (ex = 'PNG') then ir := TFPReaderPNG.create else
-  if ((ex = 'JPG') or (ex = 'JPEG')) then ir := TFPReaderJPEG.create else
-  if (ex = 'BMP') then ir := TFPReaderBMP.create else
-  if (ex = 'GIF') then ir := TFPReaderGif.create else
-  Error('Extensão de imagem inválida: ' + ex);
-  im := TFPMemoryImage.create(1,1);
-  jw := TFPWriterJPEG.Create;
-  im.LoadFromFile(imgFile,ir);
-  Result.dados := TMemoryStream.Create;
-//  im.SaveToFile('/home/jean/tempconv.jpg',jw);
-  im.SaveToStream(Result.dados,jw);
-//  Result.dados.lo;
-  if (jw.GrayScale) then Result.cs := 'DeviceGray' else Result.cs := 'DeviceRGB';
-  Result.w := im.Width;
-  Result.h := im.Height;
-  Result.bpc := 8;
-  Result.f := 'DCTDecode';
+    if (ex = 'PNG') then
+      ir := TFPReaderPNG.Create
+    else
+    if ((ex = 'JPG') or (ex = 'JPEG')) then
+      ir := TFPReaderJPEG.Create
+    else
+    if (ex = 'BMP') then
+      ir := TFPReaderBMP.Create
+    else
+    if (ex = 'GIF') then
+      ir := TFPReaderGif.Create
+    else
+      Error('Invalid extension from image: ' + ex);
+    im := TFPMemoryImage.Create(1, 1);
+    jw := TFPWriterJPEG.Create;
+    im.LoadFromFile(imgFile, ir);
+    Result.imgSource := TMemoryStream.Create;
+    im.SaveToStream(Result.imgSource, jw);
+    if (jw.GrayScale) then
+      Result.cs := 'DeviceGray'
+    else
+      Result.cs := 'DeviceRGB';
+    Result.w := im.Width;
+    Result.h := im.Height;
+    Result.bpc := 8;
+    Result.f := 'DCTDecode';
   finally
     ir.Free;
     im.Free;
     jw.Free;
   end;
-{		$colspace='DeviceRGB';
-	elseif($a['channels']==4)
-		$colspace='DeviceCMYK';
-	else
-		$colspace='DeviceGray';
-	$bpc=isset($a['bits']) ? $a['bits'] : 8;
-	//Read whole file
-	$f=fopen($file,'rb');
-	$data=fread($f,filesize($file));
-	fclose($f);
-	return array('w'=>$a[0],'h'=>$a[1],'cs'=>$colspace,'bpc'=>$bpc,'f'=>'DCTDecode','data'=>$data);
-}
+end;
 
+procedure TJPFpdf.Code25(vXPos, vYPos: double; vTextCode: string; vBaseWidth: double = 1; vHeight: double = 10);
+var
+  vbarChar: array[48..90] of string;
+  vnarrow,vwide: double;
+  vi: integer;
+  vcharBar,vcharSpace: char;
+  vs: Integer;
+  vseq: String;
+  vbar: Integer;
+  vlineWidth: Double;
+begin
+    vwide := vBaseWidth;
+    vnarrow := vBaseWidth / 3 ;
+
+    // wide/narrow codes for the digits
+    vbarChar[48] := 'nnwwn';
+    vbarChar[49] := 'wnnnw';
+    vbarChar[50] := 'nwnnw';
+    vbarChar[51] := 'wwnnn';
+    vbarChar[52] := 'nnwnw';
+    vbarChar[53] := 'wnwnn';
+    vbarChar[54] := 'nwwnn';
+    vbarChar[55] := 'nnnww';
+    vbarChar[56] := 'wnnwn';
+    vbarChar[57] := 'nwnwn';
+    vbarChar[65] := 'nn';
+    vbarChar[90] := 'wn';
+
+    // add leading zero if code-length is odd
+    if(Length(vTextCode) mod 2 <> 0) then begin
+        vTextCode := '0' + vTextCode;
+    end;
+
+    SetFont(ffHelvetica,fsNormal,10);
+    Text(vXPos, vYPos + vHeight + 4, vTextCode);
+    SetFillColor(0,0,0);
+
+    // add start and stop codes
+    vTextCode := 'AA' + LowerCase(vTextCode) + 'ZA';
+    vi := 1;
+    while (vi < Length(vTextCode)) do begin
+        // choose next pair of digits
+        vcharBar := vTextCode[vi];
+        vcharSpace := vTextCode[vi + 1];
+        // check whether it is a valid digit
+        if not(Ord(vcharBar) in [48..57,65,90]) then begin
+            Error('Invalid character in barcode: ' + vcharBar);
+        end;
+        if not(Ord(vcharSpace) in [48..57,65,90]) then begin
+            Self.Error('Invalid character in barcode: ' + vcharSpace);
+        end;
+        // create a wide/narrow-sequence (first digit=bars, second digit=spaces)
+        vseq := '';
+        for vs := 0 to Length(vbarChar[Ord(vcharBar)]) do begin
+            vseq += vbarChar[Ord(vcharBar)][vs] + vbarChar[Ord(vcharSpace)][vs];
+        end;
+        for vbar := 0 to Length(vseq) do begin
+            // set lineWidth depending on value
+            if(vseq[vbar] = 'n') then begin
+                vlineWidth := vnarrow;
+            end else begin
+                vlineWidth := vwide;
+            end;
+            // draw every second value, because the second digit of the pair is represented by the spaces
+            if(vbar mod 2 = 0) then begin
+                Self.Rect(vXPos, vYPos, vlineWidth, vHeight, 'F');
+            end;
+            vXPos += vlineWidth;
+        end;
+        vi := vi + 2;
+    end;
 end;
 
 end.
-
