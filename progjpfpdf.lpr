@@ -10,10 +10,8 @@ uses
 
 var
   JPFpdf1: TJPFpdf;
-  st: string;
   t: TStrings;
 begin
-  st := '';
   JPFpdf1 := TJPFpdf.Create;
   t := TStringList.Create;
   t.LoadFromFile(ExtractFilePath(ParamStr(0))+'20k_c1.txt');

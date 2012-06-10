@@ -49,18 +49,18 @@ type
   end;
 
   TJPFont = record
-    name: string;
+    Name: string;
     number: integer;
   end;
 
-  TJPColor = (cBlack,cSilver,cGray,cWhite,cMaroon,cRed,cPurple,cFuchsia,
-              cGreen,cLime,cOlive,cYellow,cNavy,cBlue,cTeal,cAqua);
+  TJPColor = (cBlack, cSilver, cGray, cWhite, cMaroon, cRed, cPurple, cFuchsia,
+    cGreen, cLime, cOlive, cYellow, cNavy, cBlue, cTeal, cAqua);
   TPDFOrientation = (poPortrait, poLandscape, poDefault);
   TPDFUnit = (puPT, puMM, puCM, puIN);
   TPDFPageFormat = (pfA3, pfA4, pfA5, pfLetter, pfLegal);
   TPDFFontFamily = (ffCourier, ffHelvetica, ffTimes, ffSymbol, ffZapfdingbats);
   TPDFFontStyle = (fsNormal, fsBold, fsItalic, fsBoldItalic);
-  TPDFDisplayMode = (dmFullPage,dmFullWidth,dmReal,dmDefault,dmZoom);
+  TPDFDisplayMode = (dmFullPage, dmFullWidth, dmReal, dmDefault, dmZoom);
 
   { TJPFpdf }
 
@@ -76,16 +76,17 @@ type
     procedure _beginpage(orientation: string);
     procedure _endpage;
     procedure _newobj;
-    function _setfont(fFamily: TPDFFontFamily; fStyle: TPDFFontStyle; fSize: double): boolean;
+    function _setfont(fFamily: TPDFFontFamily; fStyle: TPDFFontStyle;
+      fSize: double): boolean;
     function _setfontsize(fSize: double): boolean;
   protected
-    function FloatToStr(Value: Double): String;
+    function FloatToStr(Value: double): string;
     function _escape(sText: string): string;
     procedure _out(sText: string);
   public
   const
     {$i inc_fontes.inc}
-    TPDFFormatSetings:  TFormatSettings = (
+    TPDFFormatSetings: TFormatSettings = (
       CurrencyFormat: 1;
       NegCurrFormat: 5;
       ThousandSeparator: ',';
@@ -101,24 +102,31 @@ type
       TimePMString: 'PM';
       ShortTimeFormat: 'hh:nn';
       LongTimeFormat: 'hh:nn:ss';
-      ShortMonthNames: ('Jan','Feb','Mar','Apr','May','Jun',
-                        'Jul','Aug','Sep','Oct','Nov','Dec');
-      LongMonthNames: ('January','February','March','April','May','June',
-                       'July','August','September','October','November','December');
-      ShortDayNames: ('Sun','Mon','Tue','Wed','Thu','Fri','Sat');
-      LongDayNames:  ('Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday');
+      ShortMonthNames: ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
+      LongMonthNames: ('January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December');
+      ShortDayNames: ('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat');
+      LongDayNames: ('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+      'Friday', 'Saturday');
       TwoDigitYearCenturyWindow: 50;
-    );
-    JORIENTATION: array[TPDFOrientation] of char = ('P','L',#0);
-    JUNIT: array[TPDFUnit] of double = (1,72/25.4,72/2.54,72);
-    JFORMAT_W: array[TPDFPageFormat] of double = (841.89,595.28,420.94,612,612);
-    JFORMAT_H: array[TPDFPageFormat] of double = (1190.55,841.89,595.28,792,1008);
-    JCOLOR_R: array[TJPColor] of SmallInt = (0,192,128,255,128,255,128,255,  0,  0,128,255,  0,  0,  0,  0);
-    JCOLOR_G: array[TJPColor] of SmallInt = (0,192,128,255,  0,  0,  0,  0,128,255,128,255,  0,  0,128,255);
-    JCOLOR_B: array[TJPColor] of SmallInt = (0,192,128,255,  0,  0,128,255,  0,  0,  0,  0,128,255,128,255);
-    JFONTFAMILY: array[TPDFFontFamily] of shortstring = ('Courier','Helvetica','Times','Symbol','Zapfdingbats');
-    JFONTSTYLE: array[TPDFFontStyle] of shortstring = ('','-Bold','-Oblique','-BoldOblique');
-    JDISPLAYMODE: array[TPDFDisplayMode] of shortstring = ('fullpage','fullwidth','real','default','zoom');
+      );
+    JORIENTATION: array[TPDFOrientation] of char = ('P', 'L', #0);
+    JUNIT: array[TPDFUnit] of double = (1, 72 / 25.4, 72 / 2.54, 72);
+    JFORMAT_W: array[TPDFPageFormat] of double = (841.89, 595.28, 420.94, 612, 612);
+    JFORMAT_H: array[TPDFPageFormat] of double = (1190.55, 841.89, 595.28, 792, 1008);
+    JCOLOR_R: array[TJPColor] of smallint =
+      (0, 192, 128, 255, 128, 255, 128, 255, 0, 0, 128, 255, 0, 0, 0, 0);
+    JCOLOR_G: array[TJPColor] of smallint =
+      (0, 192, 128, 255, 0, 0, 0, 0, 128, 255, 128, 255, 0, 0, 128, 255);
+    JCOLOR_B: array[TJPColor] of smallint =
+      (0, 192, 128, 255, 0, 0, 128, 255, 0, 0, 0, 0, 128, 255, 128, 255);
+    JFONTFAMILY: array[TPDFFontFamily] of shortstring =
+      ('Courier', 'Helvetica', 'Times', 'Symbol', 'Zapfdingbats');
+    JFONTSTYLE: array[TPDFFontStyle] of shortstring =
+      ('', '-Bold', '-Oblique', '-BoldOblique');
+    JDISPLAYMODE: array[TPDFDisplayMode] of shortstring =
+      ('fullpage', 'fullwidth', 'real', 'default', 'zoom');
     FREE_JPDF_PASCAL_VERSION = '1.0 Stable';
   var
     page: integer;               // current page number
@@ -166,10 +174,12 @@ type
     DocKeywords: string;           // keywords
     DocCreator: string;            // creator
     DocAliasNbPages: string;       // alias for total number of pages
-    Jpdf_charwidths: array[TPDFFontFamily] of array[TPDFFontStyle] of array [0..255] of integer; // widths of the characters of fonts
-    constructor Create(orientation: TPDFOrientation = poPortrait; pageUnit: TPDFUnit = puMM;
-      pageFormat: TPDFPageFormat = pfA4);
-    procedure SetMargins(marginLeft: double; marginTop: double; marginRight: double = -1);
+    Jpdf_charwidths: array[TPDFFontFamily] of array[TPDFFontStyle] of
+    array [0..255] of integer; // widths of the characters of fonts
+    constructor Create(orientation: TPDFOrientation = poPortrait;
+      pageUnit: TPDFUnit = puMM; pageFormat: TPDFPageFormat = pfA4);
+    procedure SetMargins(marginLeft: double; marginTop: double;
+      marginRight: double = -1);
     procedure SetLeftMargin(marginLeft: double);
     procedure SetRightMargin(marginRight: double);
     procedure SetAutoPageBreak(vAuto: boolean; vMargin: double = 0.0);
@@ -198,8 +208,10 @@ type
     procedure SetLineWidth(vWidth: double);
     procedure Line(vX1, vY1, vX2, vY2: double);
     procedure Rect(vX, vY, vWidht, vHeight: double; vStyle: string = '');
-    procedure SetFont(fFamily:  TPDFFontFamily; fStyle: TPDFFontStyle; fSize: double = 0.0; fUnderline: boolean = False);
-    procedure SetFont(fFamily:  TPDFFontFamily; fSize: double = 0.0; fUnderline: boolean = False);
+    procedure SetFont(fFamily: TPDFFontFamily; fStyle: TPDFFontStyle;
+      fSize: double = 0.0; fUnderline: boolean = False);
+    procedure SetFont(fFamily: TPDFFontFamily; fSize: double = 0.0;
+      fUnderline: boolean = False);
     procedure SetFontSize(fSize: double; fUnderline: boolean = False);
     procedure SetUnderline(fUnderline: boolean = False);
     procedure Text(vX, vY: double; vText: string);
@@ -208,8 +220,8 @@ type
     procedure Cell(vWidth: double; vHeight: double = 0.0; vText: string = '';
       vBorder: string = '0'; vLineBreak: integer = 0; vAlign: string = '';
       vFill: integer = 0);
-    procedure MultiCell(vWidth, vHeight: double; vText: string; vBorder: string = '0';
-      vAlign: string = 'J'; vFill: integer = 0);
+    procedure MultiCell(vWidth, vHeight: double; vText: string;
+      vBorder: string = '0'; vAlign: string = 'J'; vFill: integer = 0);
     procedure Image(vFile: string; vX: double; vY: double; vWidth: double;
       vHeight: double = 0.0);
     procedure Ln(vHeight: double = 0);
@@ -219,7 +231,8 @@ type
     procedure SetY(vY: double);
     procedure SetXY(vX, vY: double);
     procedure Output(vFile: string = ''; vDownload: boolean = False);
-    procedure Code25(vXPos, vYPos: double; vTextCode: string; vBaseWidth: double = 1; vHeight: double = 10);
+    procedure Code25(vXPos, vYPos: double; vTextCode: string;
+      vBaseWidth: double = 1; vHeight: double = 10);
   end;
 
 implementation
@@ -232,22 +245,23 @@ begin
   Self.lMargin := marginLeft;
   Self.tMargin := marginTop;
   if (marginRight = -1) then
-    Self.rMargin := Self.lMargin else
-      Self.rMargin := marginRight;
+    Self.rMargin := Self.lMargin
+  else
+    Self.rMargin := marginRight;
 end;
 
 procedure TJPFpdf.SetLeftMargin(marginLeft: double);
 begin
   //Set left margin
-	Self.lMargin := marginLeft;
-	if((Self.page > 0) and (Self.cpX < marginLeft)) then
-		Self.cpX := marginLeft;
+  Self.lMargin := marginLeft;
+  if ((Self.page > 0) and (Self.cpX < marginLeft)) then
+    Self.cpX := marginLeft;
 end;
 
 procedure TJPFpdf.SetRightMargin(marginRight: double);
 begin
-	//Set right margin
-	Self.rMargin := marginRight;
+  //Set right margin
+  Self.rMargin := marginRight;
 end;
 
 procedure TJPFpdf.SetAutoPageBreak(vAuto: boolean; vMargin: double);
@@ -261,7 +275,9 @@ end;
 procedure TJPFpdf.SetDisplayMode(mode: TPDFDisplayMode; zoom: smallint);
 begin
   //Set display mode in viewer
-  if (mode = dmZoom) then Self.DocDisplayMode := IntToStr(zoom) else
+  if (mode = dmZoom) then
+    Self.DocDisplayMode := IntToStr(zoom)
+  else
     Self.DocDisplayMode := JDISPLAYMODE[mode];
 end;
 
@@ -338,13 +354,14 @@ procedure TJPFpdf.AddPage(orientation: TPDFOrientation);
 var
   vdc, vfc, vtc: string;
   vfamily: TPDFFontFamily;
-  vstyle:TPDFFontStyle;
+  vstyle: TPDFFontStyle;
   vsize: double;
   vlw: double;
   vcf: boolean;
 begin
   //Start a new page
-	if(Self.state = 0) then Self.Open();
+  if (Self.state = 0) then
+    Self.Open();
   vfamily := Self.cFontFamily;
   vstyle := Self.cFontStyle;
   vsize := Self.cFontSizePt;
@@ -369,7 +386,7 @@ begin
   //Set line width
   _out(FloatToStr(vlw) + ' w');
   //Set font
-    SetFont(vfamily, vstyle, vsize);
+  SetFont(vfamily, vstyle, vsize);
   //Set colors
   if (vdc <> '0 G') then
     _out(vdc);
@@ -386,7 +403,7 @@ begin
     _out(FloatToStr(vlw) + ' w');
   end;
   //Restore font
-    SetFont(vfamily, vstyle, vsize);
+  SetFont(vfamily, vstyle, vsize);
   //Restore colors
   if (Self.pDrawColor <> vdc) then
   begin
@@ -459,17 +476,17 @@ end;
 
 procedure TJPFpdf.SetTextColor(color: TJPColor);
 begin
-  SetTextColor(JCOLOR_R[color],JCOLOR_G[color],JCOLOR_B[color]);
+  SetTextColor(JCOLOR_R[color], JCOLOR_G[color], JCOLOR_B[color]);
 end;
 
 procedure TJPFpdf.SetFillColor(color: TJPColor);
 begin
-  SetFillColor(JCOLOR_R[color],JCOLOR_G[color],JCOLOR_B[color]);
+  SetFillColor(JCOLOR_R[color], JCOLOR_G[color], JCOLOR_B[color]);
 end;
 
 procedure TJPFpdf.SetDrawColor(color: TJPColor);
 begin
-  SetDrawColor(JCOLOR_R[color],JCOLOR_G[color],JCOLOR_B[color]);
+  SetDrawColor(JCOLOR_R[color], JCOLOR_G[color], JCOLOR_B[color]);
 end;
 
 function TJPFpdf.GetStringWidth(vText: string): double;
@@ -481,7 +498,8 @@ var
 begin
   vfamily := Self.cFontFamily;
   vstyle := Self.cFontStyle;
-    if (vfamily in [ffCourier,ffSymbol,ffZapfdingbats]) then vstyle := fsNormal;
+  if (vfamily in [ffCourier, ffSymbol, ffZapfdingbats]) then
+    vstyle := fsNormal;
   vw := 0;
   vl := Length(vText);
   for vi := 0 to vl do
@@ -520,7 +538,8 @@ begin
     ' -' + FloatToStr(vHeight) + ' re ' + vop);
 end;
 
-procedure TJPFpdf.SetFont(fFamily: TPDFFontFamily; fStyle: TPDFFontStyle; fSize: double; fUnderline: boolean);
+procedure TJPFpdf.SetFont(fFamily: TPDFFontFamily; fStyle: TPDFFontStyle;
+  fSize: double; fUnderline: boolean);
 begin
   //Select a font; size given in points
   _setfont(fFamily, fStyle, fSize);
@@ -554,8 +573,8 @@ begin
     StringReplace(vText, '\', '\\', [rfReplaceAll]), ')', '\)', [rfReplaceAll]),
     '(', '\(', [rfReplaceAll]);
   sss := 'BT ' + FloatToStr(vX) + ' -' + FloatToStr(vY) + ' Td (' + vText + ') Tj ET';
-	if((Self.pUnderlineFlag) and (vText <> '')) then
-		sss += ' ' + _dounderline(vX, vY, vText);
+  if ((Self.pUnderlineFlag) and (vText <> '')) then
+    sss += ' ' + _dounderline(vX, vY, vText);
   if (Self.pColorFlag) then
     sss := 'q ' + Self.pTextColor + ' ' + sss + ' Q';
   _out(sss);
@@ -565,99 +584,100 @@ procedure TJPFpdf.Writer(vHeight: double; vText: string);
 var
   vfamily: TPDFFontFamily;
   vstyle: TPDFFontStyle;
-  vw: Extended;
-  vwmax: Extended;
-  vs: String;
-  vnb: Integer;
-  vnl: Integer;
-  vl: Integer;
-  vj: Integer;
-  vi: Integer;
-  vsep: Integer;
+  vw: extended;
+  vwmax: extended;
+  vs: string;
+  vnb: integer;
+  vnl: integer;
+  vl: integer;
+  vj: integer;
+  vi: integer;
+  vsep: integer;
   vc: char;
 begin
-	//Output text in flowing mode
+  //Output text in flowing mode
   vfamily := Self.cFontFamily;
   vstyle := Self.cFontStyle;
-  if (vfamily in [ffCourier,ffSymbol,ffZapfdingbats]) then vstyle := fsNormal;
-	vw := Self.dw - Self.rMargin - Self.cpX;
-	vwmax := (vw - 2 * Self.cMargin) * 1000 / Self.cFontSize;
-	vs := StringReplace(vText, #13, '', [rfReplaceAll]);
-	vnb := Length(vs);
-	vsep := -1;
-	vi := 0;
-	vj := 0;
-	vl := 0;
-	vnl := 1;
-	while(vi < vnb) do
-	begin
-		//Get next character
-		vc := vs[vi];
-		if(vc = #10) then
-		begin
-			//Explicit line break
-			Cell(vw, vHeight, Copy(vs, vj, vi - vj), '0', 2, '', 0);
-			vi := vi + 1;
-			vsep := -1;
-			vj := vi;
-			vl := 0;
-			if(vnl = 1) then
-			begin
-				Self.cpX := Self.lMargin;
-				vw := Self.dw - Self.rMargin - Self.cpX;
-				vwmax := (vw - 2 * Self.cMargin) * 1000 / Self.cFontSize;
-			end;
-			vnl := vnl + 1;
-			continue;
-		end;
-		if(vc = ' ') then
-			vsep := vi;
-		vl += Self.Jpdf_charwidths[vfamily][vstyle][Ord(vc)];
-		if(vl > vwmax) then
-		begin
-			//Automatic line break
-			if(vsep = -1) then
-			begin
-				if(Self.cpX > Self.lMargin) then
-				begin
-					//Move to next line
-					Self.cpX := Self.lMargin;
-					Self.cpY += vHeight;
-					vw := Self.dw - Self.rMargin - Self.cpX;
-					vwmax := (vw - 2 * Self.cMargin) * 1000 / Self.cFontSize;
-					vi := vi + 1;
-					vnl := vnl + 1;
-					continue;
-				end;
-				if(vi = vj) then
-					vi := vi + 1;
-				Cell(vw, vHeight, Copy(vs, vj, vi - vj), '0', 2, '', 0);
-			end
-			else
-			begin
-				Cell(vw, vHeight, Copy(vs, vj, vsep - vj), '0', 2, '', 0);
-				vi := vsep + 1;
-			end;
-			vsep := -1;
-			vj := vi;
-			vl := 0;
-			if(vnl = 1) then
-			begin
-				Self.cpX := Self.lMargin;
-				vw := Self.dw - Self.rMargin - Self.cpX;
-				vwmax := (vw - 2 * Self.cMargin) * 1000 / Self.cFontSize;
-			end;
-			vnl := vnl + 1;
-		end
-		else
-			vi := vi + 1;
-	end;
-	//Last chunk
-	if(vi <> vj) then
-	begin
-		vw := StrToFloat(FloatToStrF(vl / 1000 * Self.cFontSize, ffNumber, 14, 2));
-		Cell(vw, vHeight, Copy(vs, vj, vi), '0', 0, '', 0);
-	end;
+  if (vfamily in [ffCourier, ffSymbol, ffZapfdingbats]) then
+    vstyle := fsNormal;
+  vw := Self.dw - Self.rMargin - Self.cpX;
+  vwmax := (vw - 2 * Self.cMargin) * 1000 / Self.cFontSize;
+  vs := StringReplace(vText, #13, '', [rfReplaceAll]);
+  vnb := Length(vs);
+  vsep := -1;
+  vi := 0;
+  vj := 0;
+  vl := 0;
+  vnl := 1;
+  while (vi < vnb) do
+  begin
+    //Get next character
+    vc := vs[vi];
+    if (vc = #10) then
+    begin
+      //Explicit line break
+      Cell(vw, vHeight, Copy(vs, vj, vi - vj), '0', 2, '', 0);
+      vi := vi + 1;
+      vsep := -1;
+      vj := vi;
+      vl := 0;
+      if (vnl = 1) then
+      begin
+        Self.cpX := Self.lMargin;
+        vw := Self.dw - Self.rMargin - Self.cpX;
+        vwmax := (vw - 2 * Self.cMargin) * 1000 / Self.cFontSize;
+      end;
+      vnl := vnl + 1;
+      continue;
+    end;
+    if (vc = ' ') then
+      vsep := vi;
+    vl += Self.Jpdf_charwidths[vfamily][vstyle][Ord(vc)];
+    if (vl > vwmax) then
+    begin
+      //Automatic line break
+      if (vsep = -1) then
+      begin
+        if (Self.cpX > Self.lMargin) then
+        begin
+          //Move to next line
+          Self.cpX := Self.lMargin;
+          Self.cpY += vHeight;
+          vw := Self.dw - Self.rMargin - Self.cpX;
+          vwmax := (vw - 2 * Self.cMargin) * 1000 / Self.cFontSize;
+          vi := vi + 1;
+          vnl := vnl + 1;
+          continue;
+        end;
+        if (vi = vj) then
+          vi := vi + 1;
+        Cell(vw, vHeight, Copy(vs, vj, vi - vj), '0', 2, '', 0);
+      end
+      else
+      begin
+        Cell(vw, vHeight, Copy(vs, vj, vsep - vj), '0', 2, '', 0);
+        vi := vsep + 1;
+      end;
+      vsep := -1;
+      vj := vi;
+      vl := 0;
+      if (vnl = 1) then
+      begin
+        Self.cpX := Self.lMargin;
+        vw := Self.dw - Self.rMargin - Self.cpX;
+        vwmax := (vw - 2 * Self.cMargin) * 1000 / Self.cFontSize;
+      end;
+      vnl := vnl + 1;
+    end
+    else
+      vi := vi + 1;
+  end;
+  //Last chunk
+  if (vi <> vj) then
+  begin
+    vw := StrToFloat(FloatToStrF(vl / 1000 * Self.cFontSize, ffNumber, 14, 2));
+    Cell(vw, vHeight, Copy(vs, vj, vi), '0', 0, '', 0);
+  end;
 end;
 
 function TJPFpdf.AcceptPageBreak: boolean;
@@ -701,8 +721,8 @@ begin
     vWidth := StrToFloat(FloatToStrF((vHeight * img.w / img.h), ffNumber, 14, 2));
   if (vHeight = 0) then
     vHeight := StrToFloat(FloatToStrF((vWidth * img.h / img.w), ffNumber, 14, 2));
-  _out('q ' + FloatToStr(vWidth) + ' 0 0 ' + FloatToStr(vHeight) + ' ' +
-    FloatToStr(vX) + ' -' + FloatToStr(vY + vHeight) + ' cm /I' +
+  _out('q ' + FloatToStr(vWidth) + ' 0 0 ' + FloatToStr(vHeight) +
+    ' ' + FloatToStr(vX) + ' -' + FloatToStr(vY + vHeight) + ' cm /I' +
     IntToStr(Length(Self.pImages)) + ' Do Q');
 end;
 
@@ -713,8 +733,8 @@ var
   sss: string;
 begin
   //Output a cell
-  if (((Self.cpY + vHeight) > Self.PageBreakTrigger) and not (Self.InFooter) and
-    (AcceptPageBreak())) then
+  if (((Self.cpY + vHeight) > Self.PageBreakTrigger) and not
+    (Self.InFooter) and (AcceptPageBreak())) then
   begin
     vx := Self.cpX;
     vws := Self.pgWs;
@@ -753,17 +773,17 @@ begin
     vx := Self.cpX;
     vy := Self.cpY;
     if (Pos('L', vBorder) > 0) then
-      sss += FloatToStr(vx) + ' -' + FloatToStr(vy) + ' m ' + FloatToStr(vx) +
-        ' -' + FloatToStr((vy + vHeight)) + ' l S ';
+      sss += FloatToStr(vx) + ' -' + FloatToStr(vy) + ' m ' +
+        FloatToStr(vx) + ' -' + FloatToStr((vy + vHeight)) + ' l S ';
     if (Pos('T', vBorder) > 0) then
       sss += FloatToStr(vx) + ' -' + FloatToStr(vy) + ' m ' + FloatToStr(
         (vx + vWidth)) + ' -' + FloatToStr(vy) + ' l S ';
     if (Pos('R', vBorder) > 0) then
-      sss += FloatToStr((vx + vWidth)) + ' -' + FloatToStr(vy) + ' m ' +
-        FloatToStr((vx + vWidth)) + ' -' + FloatToStr((vy + vHeight)) + ' l S ';
+      sss += FloatToStr((vx + vWidth)) + ' -' + FloatToStr(vy) +
+        ' m ' + FloatToStr((vx + vWidth)) + ' -' + FloatToStr((vy + vHeight)) + ' l S ';
     if (Pos('B', vBorder) > 0) then
-      sss += FloatToStr(vx) + ' -' + FloatToStr((vy + vHeight)) + ' m ' +
-        FloatToStr((vx + vWidth)) + ' -' + FloatToStr((vy + vHeight)) + ' l S ';
+      sss += FloatToStr(vx) + ' -' + FloatToStr((vy + vHeight)) +
+        ' m ' + FloatToStr((vx + vWidth)) + ' -' + FloatToStr((vy + vHeight)) + ' l S ';
   end;
   if (vText <> '') then
   begin
@@ -780,8 +800,9 @@ begin
       sss += 'q ' + Self.pTextColor + ' ';
     sss += 'BT ' + FloatToStr((Self.cpX + vdx)) + ' -' + FloatToStr(
       (Self.cpY + 0.5 * vHeight + 0.3 * Self.cFontSize)) + ' Td (' + vText + ') Tj ET';
-    if(pUnderlineFlag) then
-    			sss += ' ' + _dounderline(Self.cpX + vdx, Self.cpY + 0.5 * vHeight + 0.3 * Self.cFontSize, vText);
+    if (pUnderlineFlag) then
+      sss += ' ' + _dounderline(Self.cpX + vdx, Self.cpY + 0.5 *
+        vHeight + 0.3 * Self.cFontSize, vText);
     if (Self.pColorFlag) then
       sss += ' Q';
   end;
@@ -799,8 +820,8 @@ begin
     Self.cpX += vWidth;
 end;
 
-procedure TJPFpdf.MultiCell(vWidth, vHeight: double; vText: string; vBorder: string;
-  vAlign: string; vFill: integer);
+procedure TJPFpdf.MultiCell(vWidth, vHeight: double; vText: string;
+  vBorder: string; vAlign: string; vFill: integer);
 var
   vfamily: TPDFFontFamily;
   vstyle: TPDFFontStyle;
@@ -812,11 +833,12 @@ var
 begin
   vfamily := Self.cFontFamily;
   vstyle := Self.cFontStyle;
-  if (vfamily in [ffCourier,ffSymbol,ffZapfdingbats]) then vstyle := fsNormal;
+  if (vfamily in [ffCourier, ffSymbol, ffZapfdingbats]) then
+    vstyle := fsNormal;
   if (vWidth = 0) then
     vWidth := Self.dw - Self.rMargin - Self.cpX;
   vwmax := (vWidth - 2 * Self.cMargin) * 1000 / Self.cFontSize;
-  vText := #10 + vText;
+  vText := vText + #0;
   vs := StringReplace(vText, #13, '', [rfReplaceAll]);
   vnb := Length(vs);
   if ((vnb > 0) and (vs[vnb - 1] = #10)) then
@@ -844,8 +866,8 @@ begin
     end;
   end;
   vsep := -1;
-  vi := 0;
-  vj := 0;
+  vi := 1;
+  vj := 1;
   vl := 0;
   vns := 0;
   vnl := 1;
@@ -861,10 +883,7 @@ begin
         Self.pgWs := 0;
         _out('0 Tw');
       end;
-      if (vi > 1) then
-        Cell(vWidth, vHeight, Copy(vs, vj, vi - vj), vb, 2, vAlign, vFill)
-      else
-        Cell(vWidth, 0, Copy(vs, vj, vi - vj), vb, 2, vAlign, vFill);
+      Cell(vWidth, vHeight, Copy(vs, vj, vi - vj), vb, 2, vAlign, vFill);
       vi := vi + 1;
       vsep := -1;
       vj := vi;
@@ -901,8 +920,8 @@ begin
         if (vAlign = 'J') then
         begin
           if (vns > 1) then
-            Self.pgWs := StrToFloat(FloatToStrF((vwmax - vls) / 1000 * Self.cFontSize /
-              (vns - 1), ffNumber, 14, 3))
+            Self.pgWs := StrToFloat(FloatToStrF((vwmax - vls) / 1000 *
+              Self.cFontSize / (vns - 1), ffNumber, 14, 3))
           else
             Self.pgWs := 0;
           _out(FloatToStr(Self.pgWs) + ' Tw');
@@ -1033,7 +1052,8 @@ begin
   _out('%PDF-1.7');
 end;
 
-function TJPFpdf._setfont(fFamily: TPDFFontFamily; fStyle: TPDFFontStyle; fSize: double): boolean;
+function TJPFpdf._setfont(fFamily: TPDFFontFamily; fStyle: TPDFFontStyle;
+  fSize: double): boolean;
 var
   vfontname: string;
   vn: integer;
@@ -1049,8 +1069,11 @@ begin
   end;
   //Retrieve Type1 font name
   if (fFamily = ffTimes) then
-    if (fStyle = fsNormal) then vfontname := 'Times-Roman' else
-      vfontname := JFONTFAMILY[fFamily] + StringReplace(JFONTSTYLE[fStyle],'Oblique','Italic',[rfReplaceAll])
+    if (fStyle = fsNormal) then
+      vfontname := 'Times-Roman'
+    else
+      vfontname := JFONTFAMILY[fFamily] +
+        StringReplace(JFONTSTYLE[fStyle], 'Oblique', 'Italic', [rfReplaceAll])
   else
     vfontname := JFONTFAMILY[fFamily] + JFONTSTYLE[fStyle];
   //Test if used for the first time
@@ -1059,7 +1082,7 @@ begin
     vn := Length(Self.pFonts);
     SetLength(Self.pFonts, vn + 1);
     Self.pFonts[vn].number := vn + 1;
-    Self.pFonts[vn].name := vfontname;
+    Self.pFonts[vn].Name := vfontname;
   end;
   //Select it
   Self.cFontFamily := fFamily;
@@ -1068,7 +1091,7 @@ begin
   Self.cFontSize := StrToFloat(FloatToStrF(fSize / Self.pgK, ffNumber, 14, 2));
   for vn := 0 to Length(Self.pFonts) do
   begin
-    if (Self.pFonts[vn].name = vfontname) then
+    if (Self.pFonts[vn].Name = vfontname) then
       break;
   end;
   if (Self.page > 0) then
@@ -1135,9 +1158,9 @@ begin
     _newobj();
     _out('<</Type /Font');
     _out('/Subtype /Type1');
-    _out('/BaseFont /' + Self.pFonts[vu].name);
-    if ((Self.pFonts[vu].name <> 'Symbol') and (Self.pFonts[vu].name <>
-      'ZapfDingbats')) then
+    _out('/BaseFont /' + Self.pFonts[vu].Name);
+    if ((Self.pFonts[vu].Name <> 'Symbol') and
+      (Self.pFonts[vu].Name <> 'ZapfDingbats')) then
       _out('/Encoding /WinAnsiEncoding');
     _out('>>');
     _out('endobj');
@@ -1212,7 +1235,8 @@ begin
     _out('/Keywords (' + _escape(Self.DocKeywords) + ')');
   if (Self.DocCreator <> '') then
     _out('/Creator (' + _escape(Self.DocCreator) + ')');
-  _out('/CreationDate (D:' + FormatDateTime('dd-mm-yyy', date) + ' ' + FormatDateTime('hh:mm:ss', now) + ')>>');
+  _out('/CreationDate (D:' + FormatDateTime('dd-mm-yyy', date) + ' ' +
+    FormatDateTime('hh:mm:ss', now) + ')>>');
   _out('endobj');
   //Catalog
   _newobj();
@@ -1318,8 +1342,11 @@ begin
   Result := True;
   //Select it
   if (Self.cFontFamily = ffTimes) then
-    if (Self.cFontStyle = fsNormal) then vfontname := 'Times-Roman' else
-      vfontname := JFONTFAMILY[Self.cFontFamily] + StringReplace(JFONTSTYLE[Self.cFontStyle],'Oblique','Italic',[rfReplaceAll])
+    if (Self.cFontStyle = fsNormal) then
+      vfontname := 'Times-Roman'
+    else
+      vfontname := JFONTFAMILY[Self.cFontFamily] +
+        StringReplace(JFONTSTYLE[Self.cFontStyle], 'Oblique', 'Italic', [rfReplaceAll])
   else
     vfontname := JFONTFAMILY[Self.cFontFamily] + JFONTSTYLE[Self.cFontStyle];
   Self.cFontSizePt := fSize;
@@ -1327,7 +1354,7 @@ begin
 
   for i := 0 to Length(Self.pFonts) - 1 do
   begin
-    if (Self.pFonts[i].name = vfontname) then
+    if (Self.pFonts[i].Name = vfontname) then
     begin
       n := Self.pFonts[i].number;
       break;
@@ -1359,7 +1386,7 @@ begin
   end;
 end;
 
-function TJPFpdf.FloatToStr(Value: Double): String;
+function TJPFpdf.FloatToStr(Value: double): string;
 begin
   Result := SysUtils.FloatToStr(Value, TPDFFormatSetings);
 end;
@@ -1422,21 +1449,23 @@ function TJPFpdf._dounderline(vX, vY: double; vText: string): string;
 var
   vw: double;
   vsp: integer;
-  i: Integer;
-  up,ut: integer;
+  i: integer;
+  up, ut: integer;
 begin
-	//Underline text
+  //Underline text
   vsp := 0;
-  vText := Copy(vText,0,Length(vText)-1);
   for i := 0 to Length(vText) do
-    if (vText[i] = ' ') then vsp := vsp + 1;
+    if (vText[i] = ' ') then
+      vsp := vsp + 1;
   up := -100;
   ut := 50;
-	vw := Self.GetStringWidth(vText) + Self.pgWs * vsp;
-  Result := format('%.2F -%.2F %.2F -%.2F re f',[vX,(vY - up/1000 * Self.cFontSize),vw,(ut/1000 * Self.cFontSize)]);
+  vw := GetStringWidth(vText) + Self.pgWs * vsp;
+  Result := format('%.2F -%.2F %.2F -%.2F re f', [vX, (vY - up / 1000 * Self.cFontSize), vw -
+    (GetStringWidth(' ') / 2), (ut / 1000 * Self.cFontSize)]);
 end;
 
-constructor TJPFpdf.Create(orientation: TPDFOrientation; pageUnit: TPDFUnit; pageFormat: TPDFPageFormat);
+constructor TJPFpdf.Create(orientation: TPDFOrientation; pageUnit: TPDFUnit;
+  pageFormat: TPDFPageFormat);
 var
   ssmargin: double;
 begin
@@ -1492,7 +1521,8 @@ begin
     Self.DefOrientation := orientation;
     Self.wPt := Self.fwPt;
     Self.hPt := Self.fhPt;
-  end else
+  end
+  else
   begin
     Self.DefOrientation := orientation;
     Self.wPt := Self.fhPt;
@@ -1523,7 +1553,7 @@ begin
   Result := False;
   for i := 0 to Length(Self.pFonts) - 1 do
   begin
-    if (Self.pFonts[i].name = font) then
+    if (Self.pFonts[i].Name = font) then
     begin
       Result := True;
       break;
@@ -1575,77 +1605,88 @@ begin
   end;
 end;
 
-procedure TJPFpdf.Code25(vXPos, vYPos: double; vTextCode: string; vBaseWidth: double = 1; vHeight: double = 10);
+procedure TJPFpdf.Code25(vXPos, vYPos: double; vTextCode: string;
+  vBaseWidth: double = 1; vHeight: double = 10);
 var
   vbarChar: array[48..90] of string;
-  vnarrow,vwide: double;
+  vnarrow, vwide: double;
   vi: integer;
-  vcharBar,vcharSpace: char;
-  vs: Integer;
-  vseq: String;
-  vbar: Integer;
-  vlineWidth: Double;
+  vcharBar, vcharSpace: char;
+  vs: integer;
+  vseq: string;
+  vbar: integer;
+  vlineWidth: double;
 begin
-    vwide := vBaseWidth;
-    vnarrow := vBaseWidth / 3 ;
+  vwide := vBaseWidth;
+  vnarrow := vBaseWidth / 3;
 
-    // wide/narrow codes for the digits
-    vbarChar[48] := 'nnwwn';
-    vbarChar[49] := 'wnnnw';
-    vbarChar[50] := 'nwnnw';
-    vbarChar[51] := 'wwnnn';
-    vbarChar[52] := 'nnwnw';
-    vbarChar[53] := 'wnwnn';
-    vbarChar[54] := 'nwwnn';
-    vbarChar[55] := 'nnnww';
-    vbarChar[56] := 'wnnwn';
-    vbarChar[57] := 'nwnwn';
-    vbarChar[65] := 'nn';
-    vbarChar[90] := 'wn';
+  // wide/narrow codes for the digits
+  vbarChar[48] := 'nnwwn';
+  vbarChar[49] := 'wnnnw';
+  vbarChar[50] := 'nwnnw';
+  vbarChar[51] := 'wwnnn';
+  vbarChar[52] := 'nnwnw';
+  vbarChar[53] := 'wnwnn';
+  vbarChar[54] := 'nwwnn';
+  vbarChar[55] := 'nnnww';
+  vbarChar[56] := 'wnnwn';
+  vbarChar[57] := 'nwnwn';
+  vbarChar[65] := 'nn';
+  vbarChar[90] := 'wn';
 
-    // add leading zero if code-length is odd
-    if(Length(vTextCode) mod 2 <> 0) then begin
-        vTextCode := '0' + vTextCode;
+  // add leading zero if code-length is odd
+  if (Length(vTextCode) mod 2 <> 0) then
+  begin
+    vTextCode := '0' + vTextCode;
+  end;
+
+  SetFont(ffHelvetica, fsNormal, 10);
+  Text(vXPos, vYPos + vHeight + 4, vTextCode);
+  SetFillColor(0, 0, 0);
+
+  // add start and stop codes
+  vTextCode := 'AA' + LowerCase(vTextCode) + 'ZA';
+  vi := 1;
+  while (vi < Length(vTextCode)) do
+  begin
+    // choose next pair of digits
+    vcharBar := vTextCode[vi];
+    vcharSpace := vTextCode[vi + 1];
+    // check whether it is a valid digit
+    if not (Ord(vcharBar) in [48..57, 65, 90]) then
+    begin
+      Error('Invalid character in barcode: ' + vcharBar);
     end;
-
-    SetFont(ffHelvetica,fsNormal,10);
-    Text(vXPos, vYPos + vHeight + 4, vTextCode);
-    SetFillColor(0,0,0);
-
-    // add start and stop codes
-    vTextCode := 'AA' + LowerCase(vTextCode) + 'ZA';
-    vi := 1;
-    while (vi < Length(vTextCode)) do begin
-        // choose next pair of digits
-        vcharBar := vTextCode[vi];
-        vcharSpace := vTextCode[vi + 1];
-        // check whether it is a valid digit
-        if not(Ord(vcharBar) in [48..57,65,90]) then begin
-            Error('Invalid character in barcode: ' + vcharBar);
-        end;
-        if not(Ord(vcharSpace) in [48..57,65,90]) then begin
-            Self.Error('Invalid character in barcode: ' + vcharSpace);
-        end;
-        // create a wide/narrow-sequence (first digit=bars, second digit=spaces)
-        vseq := '';
-        for vs := 0 to Length(vbarChar[Ord(vcharBar)]) do begin
-            vseq += vbarChar[Ord(vcharBar)][vs] + vbarChar[Ord(vcharSpace)][vs];
-        end;
-        for vbar := 0 to Length(vseq) do begin
-            // set lineWidth depending on value
-            if(vseq[vbar] = 'n') then begin
-                vlineWidth := vnarrow;
-            end else begin
-                vlineWidth := vwide;
-            end;
-            // draw every second value, because the second digit of the pair is represented by the spaces
-            if(vbar mod 2 = 0) then begin
-                Self.Rect(vXPos, vYPos, vlineWidth, vHeight, 'F');
-            end;
-            vXPos += vlineWidth;
-        end;
-        vi := vi + 2;
+    if not (Ord(vcharSpace) in [48..57, 65, 90]) then
+    begin
+      Self.Error('Invalid character in barcode: ' + vcharSpace);
     end;
+    // create a wide/narrow-sequence (first digit=bars, second digit=spaces)
+    vseq := '';
+    for vs := 0 to Length(vbarChar[Ord(vcharBar)]) do
+    begin
+      vseq += vbarChar[Ord(vcharBar)][vs] + vbarChar[Ord(vcharSpace)][vs];
+    end;
+    for vbar := 0 to Length(vseq) do
+    begin
+      // set lineWidth depending on value
+      if (vseq[vbar] = 'n') then
+      begin
+        vlineWidth := vnarrow;
+      end
+      else
+      begin
+        vlineWidth := vwide;
+      end;
+      // draw every second value, because the second digit of the pair is represented by the spaces
+      if (vbar mod 2 = 0) then
+      begin
+        Self.Rect(vXPos, vYPos, vlineWidth, vHeight, 'F');
+      end;
+      vXPos += vlineWidth;
+    end;
+    vi := vi + 2;
+  end;
 end;
 
 end.
