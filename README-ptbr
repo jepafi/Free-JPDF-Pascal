@@ -1,4 +1,4 @@
-Esta é a Versão 1.0 estável da biblioteca "Free JPDF Pascal".
+Esta é a Versão 1.1 estável da biblioteca "Free JPDF Pascal".
 
 A biblioteca "Free JPDF Pascal" foi escrita totalmente em "Free Pascal" puro. 
 Ela foi criada a partir da conversão e readaptação do código da 
@@ -30,7 +30,12 @@ Recursos:
 - Suporte a Cabeçalhos e Rodapés (para usar é preciso criar uma 
   classe filha, assim como na FPDF em PHP);
 
-Novidades nesta versão:
+Novidades Versão 1.1:
+- Corrigido problema com sublinhado de tamanho irregular;
+- Corrigido problema com sublinhado em MultiCell;
+- Corrigido problema com texto menor que uma linha em MultiCell;
+
+Novidades Versão 1.0 Estável:
 - O método fpdf mudou para Create;
 - Não é mais necessário chamar o método Open depois do Create;
 - Uso enumeradores em vários métodos (Gilson Nunes);
