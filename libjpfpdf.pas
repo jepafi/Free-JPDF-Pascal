@@ -232,7 +232,7 @@ type
     procedure SetXY(vX, vY: double);
     procedure Output(vFile: string = ''; vDownload: boolean = False);
     procedure Code25(vXPos, vYPos: double; vTextCode: string;
-      vBaseWidth: double = 1; vHeight: double = 10);
+      vBaseWidth: double = 1.00; vHeight: double = 10.00);
   end;
 
 implementation
@@ -1072,8 +1072,8 @@ begin
     if (fStyle = fsNormal) then
       vfontname := 'Times-Roman'
     else
-      vfontname := JFONTFAMILY[fFamily] +
-        StringReplace(JFONTSTYLE[fStyle], 'Oblique', 'Italic', [rfReplaceAll])
+      vfontname := JFONTFAMILY[fFamily] + StringReplace(
+        JFONTSTYLE[fStyle], 'Oblique', 'Italic', [rfReplaceAll])
   else
     vfontname := JFONTFAMILY[fFamily] + JFONTSTYLE[fStyle];
   //Test if used for the first time
@@ -1460,8 +1460,9 @@ begin
   up := -100;
   ut := 50;
   vw := GetStringWidth(vText) + Self.pgWs * vsp;
-  Result := format('%.2F -%.2F %.2F -%.2F re f', [vX, (vY - up / 1000 * Self.cFontSize), vw -
-    (GetStringWidth(' ') / 2), (ut / 1000 * Self.cFontSize)]);
+  Result := format('%.2F -%.2F %.2F -%.2F re f',
+    [vX, (vY - up / 1000 * Self.cFontSize), vw - (GetStringWidth(' ') / 2),
+    (ut / 1000 * Self.cFontSize)]);
 end;
 
 constructor TJPFpdf.Create(orientation: TPDFOrientation; pageUnit: TPDFUnit;
@@ -1606,7 +1607,7 @@ begin
 end;
 
 procedure TJPFpdf.Code25(vXPos, vYPos: double; vTextCode: string;
-  vBaseWidth: double = 1; vHeight: double = 10);
+  vBaseWidth: double; vHeight: double);
 var
   vbarChar: array[48..90] of string;
   vnarrow, vwide: double;
@@ -1636,53 +1637,39 @@ begin
 
   // add leading zero if code-length is odd
   if (Length(vTextCode) mod 2 <> 0) then
-  begin
     vTextCode := '0' + vTextCode;
-  end;
 
   SetFont(ffHelvetica, fsNormal, 10);
   Text(vXPos, vYPos + vHeight + 4, vTextCode);
-  SetFillColor(0, 0, 0);
+  SetFillColor(0);
 
   // add start and stop codes
   vTextCode := 'AA' + LowerCase(vTextCode) + 'ZA';
-  vi := 1;
+  vi := 0;
   while (vi < Length(vTextCode)) do
   begin
     // choose next pair of digits
-    vcharBar := vTextCode[vi];
-    vcharSpace := vTextCode[vi + 1];
+    vcharBar := vTextCode[vi + 1];
+    vcharSpace := vTextCode[vi + 2];
     // check whether it is a valid digit
     if not (Ord(vcharBar) in [48..57, 65, 90]) then
-    begin
       Error('Invalid character in barcode: ' + vcharBar);
-    end;
     if not (Ord(vcharSpace) in [48..57, 65, 90]) then
-    begin
-      Self.Error('Invalid character in barcode: ' + vcharSpace);
-    end;
+      Error('Invalid character in barcode: ' + vcharSpace);
     // create a wide/narrow-sequence (first digit=bars, second digit=spaces)
     vseq := '';
-    for vs := 0 to Length(vbarChar[Ord(vcharBar)]) do
-    begin
-      vseq += vbarChar[Ord(vcharBar)][vs] + vbarChar[Ord(vcharSpace)][vs];
-    end;
-    for vbar := 0 to Length(vseq) do
+    for vs := 0 to Length(vbarChar[Ord(vcharBar)]) - 1 do
+      vseq += vbarChar[Ord(vcharBar)][vs + 1] + vbarChar[Ord(vcharSpace)][vs + 1];
+    for vbar := 0 to Length(vseq) - 1 do
     begin
       // set lineWidth depending on value
-      if (vseq[vbar] = 'n') then
-      begin
-        vlineWidth := vnarrow;
-      end
+      if (vseq[vbar + 1] = 'n') then
+        vlineWidth := vnarrow
       else
-      begin
         vlineWidth := vwide;
-      end;
       // draw every second value, because the second digit of the pair is represented by the spaces
       if (vbar mod 2 = 0) then
-      begin
         Self.Rect(vXPos, vYPos, vlineWidth, vHeight, 'F');
-      end;
       vXPos += vlineWidth;
     end;
     vi := vi + 2;

@@ -50,15 +50,15 @@ begin
     SetTextColor(0,0,0);
     Text(100,140,'Free Jpdf Pascal');
     AddPage;
-    Code25(60,60,'775796075446',1.3,25);
+    Code25(10,40,'05379360100094362094200000008872000000000000000');
     SetFont(ffTimes,fsBoldItalic,16,true);
     Writer(10,'Free Pascal is always ');
     SetFont(ffTimes,fsBold,16,true);
     Writer(10,'under development.');
     SetFont(ffTimes,fsItalic,16,false);
-    Writer(10,' If you want to see how the development is progressing  ');
+    Writer(10,' If you want to see how the development is progressing ');
     SetFont(ffTimes,fsNormal,16,false);
-    Writer(10,'you can take a peek at the developer versions.');
+    Writer(10,' you can take a peek at the developer versions.');
     Output(GetUserDir + '/JPFpdfTESTE.pdf');
     Free;
   end;

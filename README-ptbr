@@ -1,4 +1,4 @@
-Esta é a Versão 1.1 estável da biblioteca "Free JPDF Pascal".
+Esta é a Versão 1.2 estável da biblioteca "Free JPDF Pascal".
 
 A biblioteca "Free JPDF Pascal" foi escrita totalmente em "Free Pascal" puro. 
 Ela foi criada a partir da conversão e readaptação do código da 
@@ -11,9 +11,10 @@ Obs: Esta versão trabalha com codificação Ansi.
 
 Recursos:
 - Suporte a Imagens (JPG ou JPEG, PNG, GIF e BMP);
-- Suporte as principais fontes;
-- Vários formatos de papel;
-- Escolher unidade de medida;
+- Suporte as principais fontes (Helvetica [Arial], Times, Courier, Symbol e Zapfdingbats);
+- Suporte a estilos (negrito, itálico e/ou sublinhado);
+- Vários formatos de papel (A3, A4, A5, Legal e Letter);
+- Escolher unidade de medida (centímetro, milímetro, pontos e polegadas);
 - Quebra automática de página ou não;
 - Texto com todos os tipos de alinhamentos;
 - Poder carregar um arquivo de texto que será incluído no PDF, 
@@ -29,13 +30,17 @@ Recursos:
 - Métodos para desenhar retângulos e linhas;
 - Suporte a Cabeçalhos e Rodapés (para usar é preciso criar uma 
   classe filha, assim como na FPDF em PHP);
+- Gera códigos de barras para boletos bancários;
 
-Novidades Versão 1.1:
+Novidades na Versão 1.2:
+- Corrigido método Code25 que estava gerando códigos de barras errados;
+
+Novidades na Versão 1.1:
 - Corrigido problema com sublinhado de tamanho irregular;
 - Corrigido problema com sublinhado em MultiCell;
 - Corrigido problema com texto menor que uma linha em MultiCell;
 
-Novidades Versão 1.0 Estável:
+Novidades na Versão 1.0 Estável:
 - O método fpdf mudou para Create;
 - Não é mais necessário chamar o método Open depois do Create;
 - Uso enumeradores em vários métodos (Gilson Nunes);

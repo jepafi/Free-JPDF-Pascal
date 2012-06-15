@@ -1,10 +1,11 @@
-This is version 1.1 Stable of the library "Free JPDF Pascal".
+This is version 1.2 Stable of the library "Free JPDF Pascal".
 
 Resources:
 - Support Image (JPG or JPEG, PNG, GIF and BMP);
-- Support the main fonts;
-- Various sizes of paper;
-- Select unit of measure;
+- Support the main fonts (Helvetica [Arial], Times, Courier, Symbol and Zapfdingbats);
+- Support the styles (bold, italic and/or underline);
+- Various sizes of paper (A3, A4, A5, Legal and Letter);
+- Select unit of measure (pt, in, cm e mm);
 - Wrapping page or not;
 - Text with all types of alignment;
 - Power load a text file that is included in the PDF, with line breaks and page automatic (justified, left, right or center);
@@ -16,13 +17,17 @@ Resources:
 - Support compression (creates smaller PDF);
 - Methods to draw rectangles and lines;
 - Supports Headers and Footers (to use you need to create a child class, as well as the FPDF PHP);
+- Create barcodes (i25) for bank bills;
 
-New Version 1.1:
+New's in Version 1.2:
+- Fixed problem with method Code25 generated incorrect barcodes;
+
+New's in Version 1.1:
 - Fixed problem with underlining of irregular size;
 - Fixed problem with multicell underlined;
 - Fixed problem with text smaller than a multicell line;
 
-New Version 1.0 Stable:
+New's in Version 1.0 Stable:
 - The method fpdf moved to Create;
 - No need to call the Open after Create;
 - Use enumerators in various methods (Gilson Nunes);
@@ -35,4 +40,4 @@ New Version 1.0 Stable:
 - New method SetRightMargin;
 - New method SetUnderline;
 - New method Writer (Write the same as FPDF), lets you change the font style in the same paragraph (only left alignment);
-- New method to create Code25 barcodes for bank bills (see example);
+- New method Code25 to create barcodes for bank bills (see example);
