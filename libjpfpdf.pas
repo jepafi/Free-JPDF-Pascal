@@ -230,7 +230,11 @@ type
     function GetY: double;
     procedure SetY(vY: double);
     procedure SetXY(vX, vY: double);
-    procedure Output(vFile: string = ''; vDownload: boolean = False);
+    procedure OutToFile(vFile: string);
+    function OutToBrowserView: TStream;
+    function OutToBrowserDownload: TStream;
+    procedure OutToString(var sString: string);
+    procedure OutToMemoryStream(var sStream: TMemoryStream);
     procedure Code25(vXPos, vYPos: double; vTextCode: string;
       vBaseWidth: double = 1.00; vHeight: double = 10.00);
   end;
@@ -1000,48 +1004,96 @@ begin
   SetX(vX);
 end;
 
-procedure TJPFpdf.Output(vFile: string; vDownload: boolean);
+procedure TJPFpdf.OutToFile(vFile: string);
 begin
-  //Output PDF to file or browser
-
   if (Self.state < 3) then
   begin
     Close;
   end;
-  if (vFile = '') then
+  //Save file locally
+  try
+    Self.buffer.SaveToFile(vFile);
+  except
+    Error('Unable to create output file: ' + vFile);
+  end;
+end;
+
+function TJPFpdf.OutToBrowserView: TStream;
+var
+  docpdf: string;
+begin
+  if (Self.state < 3) then
   begin
-    //Send to browser
-    //    Header('Content-Type: application/pdf');
-    //    if(headers_sent()) then
-    //      Self.ssError('Some data has already been output to browser, can\'t send PDF file');
-    //    Header('Content-Length: ' + strlen(Self.buffer));
-    //    Header('Content-disposition: inline; filename := doc.pdf');
-    //    echo Self.buffer;
-  end
-  else
+    Close;
+  end;
+  //Send to browser
+  try
+    // Before Include: AResponse.ContentType := 'application/pdf';
+    docpdf := 'Content-Disposition: inline; filename="doc.pdf"'+#10+#13;
+    docpdf += 'Cache-Control: private, max-age=0, must-revalidate'+#10+#13;
+    docpdf += 'Pragma: public'+#10+#13;
+    Result := TMemoryStream.Create;
+    Result.Write(Pointer(docpdf)^, Length(docpdf) * SizeOf(char));
+    Result.Position := Result.Size;
+    Self.buffer.Position := 0;
+    Result.CopyFrom(Self.buffer, Self.buffer.Size);
+  except
+    Error('Unable to send to browser');
+  end;
+end;
+
+function TJPFpdf.OutToBrowserDownload: TStream;
+var
+  docpdf: string;
+begin
+  if (Self.state < 3) then
   begin
-    if (vDownload) then
-    begin
-      //Download file
-      //      if(isset(ssHTTP_ENV_VARS['HTTP_USER_AGENT']) and strpos(ssHTTP_ENV_VARS['HTTP_USER_AGENT'],'MSIE 5.5')) then
-      //        Header('Content-Type: application/dummy');
-      //      else
-      //        Header('Content-Type: application/octet-stream');
-      //      if(headers_sent()) then
-      //        Self.ssError('Some data has already been output to browser, can\'t send PDF file');
-      //      Header('Content-Length: ' + strlen(Self.buffer));
-      //      Header('Content-disposition: attachment; filename := ' + vFile);
-      //      echo Self.buffer;
-    end
-    else
-    begin
-      //Save file locally
-      try
-        Self.buffer.SaveToFile(vFile);
-      except
-        Error('Unable to create output file: ' + vFile);
-      end;
-    end;
+    Close;
+  end;
+  //Download File
+  try
+    // Before Include: AResponse.ContentType := 'application/x-download';
+    docpdf := 'Content-Disposition: attachment; filename="doc.pdf"'+#10+#13;
+    docpdf += 'Cache-Control: private, max-age=0, must-revalidate'+#10+#13;
+    docpdf += 'Pragma: public'+#10+#13;
+    Result := TMemoryStream.Create;
+    Result.Write(Pointer(docpdf)^, Length(docpdf) * SizeOf(char));
+    Result.Position := Result.Size;
+    Self.buffer.Position := 0;
+    Result.CopyFrom(Self.buffer, Self.buffer.Size);
+  except
+    Error('Unable to download file');
+  end;
+end;
+
+procedure TJPFpdf.OutToString(var sString: string);
+begin
+  if (Self.state < 3) then
+  begin
+    Close;
+  end;
+  //Save to string
+  try
+    Self.buffer.Position := 0;
+    SetLength(sString, Self.buffer.Size);
+    Self.buffer.Read(Pointer(sString)^, Self.buffer.Size);
+  except
+    Error('Unable to save to string');
+  end;
+end;
+
+procedure TJPFpdf.OutToMemoryStream(var sStream: TMemoryStream);
+begin
+  if (Self.state < 3) then
+  begin
+    Close;
+  end;
+  //Save to stream
+  try
+    Self.buffer.Position := 0;
+    sStream.CopyFrom(Self.buffer, Self.buffer.Size);
+  except
+    Error('Unable to save to stream');
   end;
 end;
 
