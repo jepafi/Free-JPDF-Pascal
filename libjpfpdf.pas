@@ -61,6 +61,7 @@ type
   TPDFFontFamily = (ffCourier, ffHelvetica, ffTimes, ffSymbol, ffZapfdingbats);
   TPDFFontStyle = (fsNormal, fsBold, fsItalic, fsBoldItalic);
   TPDFDisplayMode = (dmFullPage, dmFullWidth, dmReal, dmDefault, dmZoom);
+  TPDFContentStream = (csToViewBrowser, csToDownload);
 
   { TJPFpdf }
 
@@ -230,11 +231,10 @@ type
     function GetY: double;
     procedure SetY(vY: double);
     procedure SetXY(vX, vY: double);
-    procedure OutToFile(vFile: string);
-    function OutToBrowserView: TStream;
-    function OutToBrowserDownload: TStream;
-    procedure OutToString(var sString: string);
-    procedure OutToMemoryStream(var sStream: TMemoryStream);
+    procedure SaveToFile(vFile: string);
+    function SaveToStream: TStream;
+    function SaveToString: string;
+    function CreateContentStream(cs: TPDFContentStream = csToViewBrowser): TStream;
     procedure Code25(vXPos, vYPos: double; vTextCode: string;
       vBaseWidth: double = 1.00; vHeight: double = 10.00);
   end;
@@ -1004,7 +1004,7 @@ begin
   SetX(vX);
 end;
 
-procedure TJPFpdf.OutToFile(vFile: string);
+procedure TJPFpdf.SaveToFile(vFile: string);
 begin
   if (Self.state < 3) then
   begin
@@ -1018,7 +1018,7 @@ begin
   end;
 end;
 
-function TJPFpdf.OutToBrowserView: TStream;
+function TJPFpdf.CreateContentStream(cs: TPDFContentStream): TStream;
 var
   docpdf: string;
 begin
@@ -1026,47 +1026,43 @@ begin
   begin
     Close;
   end;
-  //Send to browser
+  Result := nil;
   try
-    // Before Include: AResponse.ContentType := 'application/pdf';
-    docpdf := 'Content-Disposition: inline; filename="doc.pdf"'+#10+#13;
-    docpdf += 'Cache-Control: private, max-age=0, must-revalidate'+#10+#13;
-    docpdf += 'Pragma: public'+#10+#13;
-    Result := TMemoryStream.Create;
-    Result.Write(Pointer(docpdf)^, Length(docpdf) * SizeOf(char));
-    Result.Position := Result.Size;
-    Self.buffer.Position := 0;
-    Result.CopyFrom(Self.buffer, Self.buffer.Size);
+    case cs of
+      csToViewBrowser:
+      begin
+        //Send to browser
+        // Before Include: AResponse.ContentType := 'application/pdf';
+        docpdf := 'Content-Disposition: inline; filename="doc.pdf"' + #10 + #13;
+        docpdf += 'Cache-Control: private, max-age=0, must-revalidate' + #10 + #13;
+        docpdf += 'Pragma: public' + #10 + #13;
+        Result := TMemoryStream.Create;
+        Result.Write(Pointer(docpdf)^, Length(docpdf) * SizeOf(char));
+        Result.Position := Result.Size;
+        Self.buffer.Position := 0;
+        Result.CopyFrom(Self.buffer, Self.buffer.Size);
+      end;
+      csToDownload:
+      begin
+        //Download File
+        // Before Include: AResponse.ContentType := 'application/x-download';
+        docpdf := 'Content-Disposition: attachment; filename="doc.pdf"' + #10 + #13;
+        docpdf += 'Cache-Control: private, max-age=0, must-revalidate' + #10 + #13;
+        docpdf += 'Pragma: public' + #10 + #13;
+        Result := TMemoryStream.Create;
+        Result.Write(Pointer(docpdf)^, Length(docpdf) * SizeOf(char));
+        Result.Position := Result.Size;
+        Self.buffer.Position := 0;
+        Result.CopyFrom(Self.buffer, Self.buffer.Size);
+      end;
+    end;
   except
-    Error('Unable to send to browser');
+    Result.Free;
+    Error('Unable to Create Content Stream');
   end;
 end;
 
-function TJPFpdf.OutToBrowserDownload: TStream;
-var
-  docpdf: string;
-begin
-  if (Self.state < 3) then
-  begin
-    Close;
-  end;
-  //Download File
-  try
-    // Before Include: AResponse.ContentType := 'application/x-download';
-    docpdf := 'Content-Disposition: attachment; filename="doc.pdf"'+#10+#13;
-    docpdf += 'Cache-Control: private, max-age=0, must-revalidate'+#10+#13;
-    docpdf += 'Pragma: public'+#10+#13;
-    Result := TMemoryStream.Create;
-    Result.Write(Pointer(docpdf)^, Length(docpdf) * SizeOf(char));
-    Result.Position := Result.Size;
-    Self.buffer.Position := 0;
-    Result.CopyFrom(Self.buffer, Self.buffer.Size);
-  except
-    Error('Unable to download file');
-  end;
-end;
-
-procedure TJPFpdf.OutToString(var sString: string);
+function TJPFpdf.SaveToString: String;
 begin
   if (Self.state < 3) then
   begin
@@ -1075,24 +1071,27 @@ begin
   //Save to string
   try
     Self.buffer.Position := 0;
-    SetLength(sString, Self.buffer.Size);
-    Self.buffer.Read(Pointer(sString)^, Self.buffer.Size);
+    SetLength(Result, Self.buffer.Size);
+    Self.buffer.Read(Pointer(Result)^, Self.buffer.Size);
   except
     Error('Unable to save to string');
   end;
 end;
 
-procedure TJPFpdf.OutToMemoryStream(var sStream: TMemoryStream);
+function TJPFpdf.SaveToStream: TStream;
 begin
   if (Self.state < 3) then
   begin
     Close;
   end;
   //Save to stream
+  Result := nil;
   try
     Self.buffer.Position := 0;
-    sStream.CopyFrom(Self.buffer, Self.buffer.Size);
+    Result := TMemoryStream.Create;
+    Result.CopyFrom(Self.buffer, Self.buffer.Size);
   except
+    Result.Free;
     Error('Unable to save to stream');
   end;
 end;

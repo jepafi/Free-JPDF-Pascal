@@ -59,7 +59,7 @@ begin
     Writer(10,' If you want to see how the development is progressing ');
     SetFont(ffTimes,fsNormal,16,false);
     Writer(10,' you can take a peek at the developer versions.');
-    OutToFile(GetUserDir + '/JPFpdfTESTE.pdf');
+    SaveToFile(GetUserDir + '/JPFpdfTESTE.pdf');
     Free;
   end;
 end.
