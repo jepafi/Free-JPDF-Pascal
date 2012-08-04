@@ -11,7 +11,7 @@ Contribution: Gilson Nunes - Use of enumerators and resolved bug related to deci
 
 Date: 08/06/2012
 
-Version: 1.0 Stable
+Version: 1.32 Stable
 
 License: You can freely use and modify this library for commercial purposes or not,
          provided you keep the credits to the author and his contributors.
@@ -90,7 +90,7 @@ type
     TPDFFormatSetings: TFormatSettings = (
       CurrencyFormat: 1;
       NegCurrFormat: 5;
-      ThousandSeparator: ',';
+      ThousandSeparator: #0;
       DecimalSeparator: '.';
       CurrencyDecimals: 2;
       DateSeparator: '-';
@@ -242,6 +242,92 @@ type
 implementation
 
 { TJPFpdf }
+
+
+constructor TJPFpdf.Create(orientation: TPDFOrientation; pageUnit: TPDFUnit;
+  pageFormat: TPDFPageFormat);
+var
+  ssmargin: double;
+begin
+  //Initialization of properties
+  Self.page := 0;
+  Self.numObj := 2;
+  Self.buffer := TMemoryStream.Create;
+  Self.buffer.Position := 0;
+  Self.state := 0;
+  Self.InFooter := False;
+  Self.cFontFamily := ffTimes;
+  Self.cFontStyle := fsNormal;
+  Self.cFontSizePt := 12;
+  Self.pDrawColor := '0 G';
+  Self.pFillColor := '0 g';
+  Self.pTextColor := '0 g';
+  Self.pColorFlag := False;
+  Self.pUnderlineFlag := False;
+  Self.pgWs := 0;
+  //Fonts Char Sizes
+  Jpdf_charwidths[ffCourier][fsNormal] := FONT_COURIER_FULL;
+  Jpdf_charwidths[ffHelvetica][fsNormal] := FONT_HELVETICA_ARIAL;
+  Jpdf_charwidths[ffHelvetica][fsBold] := FONT_HELVETICA_ARIAL_BOLD;
+  Jpdf_charwidths[ffHelvetica][fsItalic] := FONT_HELVETICA_ARIAL_ITALIC;
+  Jpdf_charwidths[ffHelvetica][fsBoldItalic] := FONT_HELVETICA_ARIAL_BOLD_ITALIC;
+  Jpdf_charwidths[ffTimes][fsNormal] := FONT_TIMES;
+  Jpdf_charwidths[ffTimes][fsBold] := FONT_TIMES_BOLD;
+  Jpdf_charwidths[ffTimes][fsItalic] := FONT_TIMES_ITALIC;
+  Jpdf_charwidths[ffTimes][fsBoldItalic] := FONT_TIMES_BOLD_ITALIC;
+  Jpdf_charwidths[ffSymbol][fsNormal] := FONT_SYMBOL;
+  Jpdf_charwidths[ffZapfdingbats][fsNormal] := FONT_ZAPFDINGBATS;
+  //Scale factor
+  Self.pgK := JUNIT[pageUnit];
+  //Page format
+{  if(is_string(pageFormat)) then
+  begin}
+  Self.fwPt := JFORMAT_W[pageFormat];
+  Self.fhPt := JFORMAT_H[pageFormat];
+{  end    //                  TAMANHO PERSONALIZADO pageFormat sintaxe '9999.99,9999.99' largura,altura
+  else
+  begin
+    Self.fwPt := round(pageFormat[0]*Self.pgK,2);
+    Self.fhPt := round(pageFormat[1]*Self.pgK,2);
+  end;}
+  Self.fw := StrToFloat(FloatToStrF(Self.fwPt / Self.pgK, ffNumber,
+    14, 2, TPDFFormatSetings), TPDFFormatSetings);
+  Self.fh := StrToFloat(FloatToStrF(Self.fhPt / Self.pgK, ffNumber,
+    14, 2, TPDFFormatSetings), TPDFFormatSetings);
+  //Page orientation
+  if (orientation in [poPortrait, poDefault]) then
+  begin
+    Self.DefOrientation := orientation;
+    Self.wPt := Self.fwPt;
+    Self.hPt := Self.fhPt;
+  end
+  else
+  begin
+    Self.DefOrientation := orientation;
+    Self.wPt := Self.fhPt;
+    Self.hPt := Self.fwPt;
+  end;
+  Self.CurOrientation := Self.DefOrientation;
+  Self.dw := StrToFloat(FloatToStrF(Self.wPt / Self.pgK, ffNumber,
+    14, 2, TPDFFormatSetings), TPDFFormatSetings);
+  Self.dh := StrToFloat(FloatToStrF(Self.hPt / Self.pgK, ffNumber,
+    14, 2, TPDFFormatSetings), TPDFFormatSetings);
+  //Page margins (1 cm)
+  ssmargin := StrToFloat(FloatToStrF(28.35 / Self.pgK, ffNumber, 14,
+    2, TPDFFormatSetings), TPDFFormatSetings);
+  SetMargins(ssmargin, ssmargin);
+  //Interior cell margin (1 mm)
+  Self.cMargin := ssmargin / 10;
+  //Line width (0.2 mm)
+  Self.pLineWidth := StrToFloat(FloatToStrF(0.567 / Self.pgK, ffNumber, 14,
+    3, TPDFFormatSetings), TPDFFormatSetings);
+  //Automatic page break
+  SetAutoPageBreak(True, 2 * ssmargin);
+  //Full width display mode
+  SetDisplayMode(dmFullWidth);
+  //Compression
+  SetCompression(False);
+end;
 
 procedure TJPFpdf.SetMargins(marginLeft: double; marginTop: double; marginRight: double);
 begin
@@ -679,7 +765,8 @@ begin
   //Last chunk
   if (vi <> vj) then
   begin
-    vw := StrToFloat(FloatToStrF(vl / 1000 * Self.cFontSize, ffNumber, 14, 2));
+    vw := StrToFloat(FloatToStrF(vl / 1000 * Self.cFontSize, ffNumber,
+      14, 2, TPDFFormatSetings), TPDFFormatSetings);
     Cell(vw, vHeight, Copy(vs, vj, vi), '0', 0, '', 0);
   end;
 end;
@@ -722,9 +809,11 @@ begin
   else
   //Automatic width or height calculus
   if (vWidth = 0) then
-    vWidth := StrToFloat(FloatToStrF((vHeight * img.w / img.h), ffNumber, 14, 2));
+    vWidth := StrToFloat(FloatToStrF((vHeight * img.w / img.h), ffNumber,
+      14, 2, TPDFFormatSetings), TPDFFormatSetings);
   if (vHeight = 0) then
-    vHeight := StrToFloat(FloatToStrF((vWidth * img.h / img.w), ffNumber, 14, 2));
+    vHeight := StrToFloat(FloatToStrF((vWidth * img.h / img.w), ffNumber,
+      14, 2, TPDFFormatSetings), TPDFFormatSetings);
   _out('q ' + FloatToStr(vWidth) + ' 0 0 ' + FloatToStr(vHeight) +
     ' ' + FloatToStr(vX) + ' -' + FloatToStr(vY + vHeight) + ' cm /I' +
     IntToStr(Length(Self.pImages)) + ' Do Q');
@@ -925,7 +1014,8 @@ begin
         begin
           if (vns > 1) then
             Self.pgWs := StrToFloat(FloatToStrF((vwmax - vls) / 1000 *
-              Self.cFontSize / (vns - 1), ffNumber, 14, 3))
+              Self.cFontSize / (vns - 1), ffNumber, 14, 3, TPDFFormatSetings),
+              TPDFFormatSetings)
           else
             Self.pgWs := 0;
           _out(FloatToStr(Self.pgWs) + ' Tw');
@@ -1062,7 +1152,7 @@ begin
   end;
 end;
 
-function TJPFpdf.SaveToString: String;
+function TJPFpdf.SaveToString: string;
 begin
   if (Self.state < 3) then
   begin
@@ -1099,6 +1189,9 @@ end;
 procedure TJPFpdf._begindoc;
 begin
   //Start document
+  SetLength(Self.offsets, 3);
+  SetLength(Self.pages, 1);
+  SetLength(Self.OrientationChanges, 1);
   Self.state := 1;
   _out('%PDF-1.7');
 end;
@@ -1139,7 +1232,8 @@ begin
   Self.cFontFamily := fFamily;
   Self.cFontStyle := fStyle;
   Self.cFontSizePt := fSize;
-  Self.cFontSize := StrToFloat(FloatToStrF(fSize / Self.pgK, ffNumber, 14, 2));
+  Self.cFontSize := StrToFloat(FloatToStrF(fSize / Self.pgK, ffNumber,
+    14, 2, TPDFFormatSetings), TPDFFormatSetings);
   for vn := 0 to Length(Self.pFonts) do
   begin
     if (Self.pFonts[vn].Name = vfontname) then
@@ -1147,7 +1241,7 @@ begin
   end;
   if (Self.page > 0) then
     _out('BT /F' + IntToStr(Self.pFonts[vn].number) + ' ' +
-      FloatToStrF(Self.cFontSize, ffNumber, 14, 2) + ' Tf ET');
+      FloatToStrF(Self.cFontSize, ffNumber, 14, 2, TPDFFormatSetings) + ' Tf ET');
   Result := True;
 end;
 
@@ -1309,7 +1403,7 @@ begin
   _out('0 ' + IntToStr(Self.numObj + 1));
   _out('0000000000 65535 f ');
   for vi := 1 to Self.numObj do
-    _out(Format('%.10d 00000 n ', [Self.offsets[vi]]));
+    _out(Format('%.10d 00000 n ', [Self.offsets[vi]],TPDFFormatSetings));
   //Trailer
   _out('trailer');
   _out('<</Size ' + IntToStr(Self.numObj + 1));
@@ -1325,6 +1419,7 @@ procedure TJPFpdf._beginpage(orientation: string);
 begin
   Self.page := Self.page + 1;
   SetLength(Self.pages, Length(Self.pages) + 1);
+  SetLength(Self.OrientationChanges, Length(Self.OrientationChanges) + 1);
   Self.pages[Self.page] := '';
   Self.state := 2;
   Self.cpX := Self.lMargin;
@@ -1363,8 +1458,9 @@ begin
     Self.PageBreakTrigger := Self.dh - Self.bMargin;
   end;
   //Set transformation matrix
-  _out(FloatToStrF(Self.pgK, ffNumber, 14, 6) + ' 0 0 ' +
-    FloatToStrF(Self.pgK, ffNumber, 14, 6) + ' 0 ' + FloatToStr(Self.hPt) + ' cm');
+  _out(FloatToStrF(Self.pgK, ffNumber, 14, 6, TPDFFormatSetings) +
+    ' 0 0 ' + FloatToStrF(Self.pgK, ffNumber, 14, 6, TPDFFormatSetings) +
+    ' 0 ' + FloatToStr(Self.hPt) + ' cm');
 end;
 
 procedure TJPFpdf._endpage;
@@ -1377,6 +1473,7 @@ procedure TJPFpdf._newobj;
 begin
   //Begin a new object
   Self.numObj := Self.numObj + 1;
+  SetLength(Self.offsets, Length(Self.offsets) + 1);
   Self.offsets[Self.numObj] := Self.buffer.Size;
   _out(IntToStr(Self.numObj) + ' 0 obj');
 end;
@@ -1401,7 +1498,8 @@ begin
   else
     vfontname := JFONTFAMILY[Self.cFontFamily] + JFONTSTYLE[Self.cFontStyle];
   Self.cFontSizePt := fSize;
-  Self.cFontSize := StrToFloat(FloatToStrF(fSize / Self.pgK, ffNumber, 14, 2));
+  Self.cFontSize := StrToFloat(FloatToStrF(fSize / Self.pgK, ffNumber,
+    14, 2, TPDFFormatSetings), TPDFFormatSetings);
 
   for i := 0 to Length(Self.pFonts) - 1 do
   begin
@@ -1415,7 +1513,7 @@ begin
     Error('Fonte não foi encontrada: ' + vfontname);
   if (Self.page > 0) then
     _out('BT /F' + IntToStr(n) + ' ' + FloatToStrF(Self.cFontSize,
-      ffNumber, 14, 2) + ' Tf ET');
+      ffNumber, 14, 2, TPDFFormatSetings) + ' Tf ET');
 end;
 
 function TJPFpdf._escape(sText: string): string;
@@ -1513,89 +1611,7 @@ begin
   vw := GetStringWidth(vText) + Self.pgWs * vsp;
   Result := format('%.2F -%.2F %.2F -%.2F re f',
     [vX, (vY - up / 1000 * Self.cFontSize), vw - (GetStringWidth(' ') / 2),
-    (ut / 1000 * Self.cFontSize)]);
-end;
-
-constructor TJPFpdf.Create(orientation: TPDFOrientation; pageUnit: TPDFUnit;
-  pageFormat: TPDFPageFormat);
-var
-  ssmargin: double;
-begin
-  //Initialization of properties
-  Self.page := 0;
-  Self.numObj := 2;
-  Self.buffer := TMemoryStream.Create;
-  Self.buffer.Position := 0;
-  SetLength(Self.pages, 2);
-  SetLength(Self.OrientationChanges, 64000000);
-  SetLength(Self.offsets, 64000000);
-  Self.state := 0;
-  Self.InFooter := False;
-  Self.cFontFamily := ffTimes;
-  Self.cFontStyle := fsNormal;
-  Self.cFontSizePt := 12;
-  Self.pDrawColor := '0 G';
-  Self.pFillColor := '0 g';
-  Self.pTextColor := '0 g';
-  Self.pColorFlag := False;
-  Self.pUnderlineFlag := False;
-  Self.pgWs := 0;
-  //Fonts Char Sizes
-  Jpdf_charwidths[ffCourier][fsNormal] := FONT_COURIER_FULL;
-  Jpdf_charwidths[ffHelvetica][fsNormal] := FONT_HELVETICA_ARIAL;
-  Jpdf_charwidths[ffHelvetica][fsBold] := FONT_HELVETICA_ARIAL_BOLD;
-  Jpdf_charwidths[ffHelvetica][fsItalic] := FONT_HELVETICA_ARIAL_ITALIC;
-  Jpdf_charwidths[ffHelvetica][fsBoldItalic] := FONT_HELVETICA_ARIAL_BOLD_ITALIC;
-  Jpdf_charwidths[ffTimes][fsNormal] := FONT_TIMES;
-  Jpdf_charwidths[ffTimes][fsBold] := FONT_TIMES_BOLD;
-  Jpdf_charwidths[ffTimes][fsItalic] := FONT_TIMES_ITALIC;
-  Jpdf_charwidths[ffTimes][fsBoldItalic] := FONT_TIMES_BOLD_ITALIC;
-  Jpdf_charwidths[ffSymbol][fsNormal] := FONT_SYMBOL;
-  Jpdf_charwidths[ffZapfdingbats][fsNormal] := FONT_ZAPFDINGBATS;
-  //Scale factor
-  Self.pgK := JUNIT[pageUnit];
-  //Page format
-{  if(is_string(pageFormat)) then
-  begin}
-  Self.fwPt := JFORMAT_W[pageFormat];
-  Self.fhPt := JFORMAT_H[pageFormat];
-{  end    //                  TAMANHO PERSONALIZADO pageFormat sintaxe '9999.99,9999.99' largura,altura
-  else
-  begin
-    Self.fwPt := round(pageFormat[0]*Self.pgK,2);
-    Self.fhPt := round(pageFormat[1]*Self.pgK,2);
-  end;}
-  Self.fw := StrToFloat(FloatToStrF(Self.fwPt / Self.pgK, ffNumber, 14, 2));
-  Self.fh := StrToFloat(FloatToStrF(Self.fhPt / Self.pgK, ffNumber, 14, 2));
-  //Page orientation
-  if (orientation in [poPortrait, poDefault]) then
-  begin
-    Self.DefOrientation := orientation;
-    Self.wPt := Self.fwPt;
-    Self.hPt := Self.fhPt;
-  end
-  else
-  begin
-    Self.DefOrientation := orientation;
-    Self.wPt := Self.fhPt;
-    Self.hPt := Self.fwPt;
-  end;
-  Self.CurOrientation := Self.DefOrientation;
-  Self.dw := StrToFloat(FloatToStrF(Self.wPt / Self.pgK, ffNumber, 14, 2));
-  Self.dh := StrToFloat(FloatToStrF(Self.hPt / Self.pgK, ffNumber, 14, 2));
-  //Page margins (1 cm)
-  ssmargin := StrToFloat(FloatToStrF(28.35 / Self.pgK, ffNumber, 14, 2));
-  SetMargins(ssmargin, ssmargin);
-  //Interior cell margin (1 mm)
-  Self.cMargin := ssmargin / 10;
-  //Line width (0.2 mm)
-  Self.pLineWidth := StrToFloat(FloatToStrF(0.567 / Self.pgK, ffNumber, 14, 3));
-  //Automatic page break
-  SetAutoPageBreak(True, 2 * ssmargin);
-  //Full width display mode
-  SetDisplayMode(dmFullWidth);
-  //Compression
-  SetCompression(False);
+    (ut / 1000 * Self.cFontSize)],TPDFFormatSetings);
 end;
 
 function TJPFpdf.FontWasUsed(font: string): boolean;

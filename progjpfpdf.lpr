@@ -11,7 +11,10 @@ uses
 var
   JPFpdf1: TJPFpdf;
   t: TStrings;
+  hh: TDateTime;
 begin
+  hh := now;
+  DefaultFormatSettings.DecimalSeparator := ',';
   JPFpdf1 := TJPFpdf.Create;
   t := TStringList.Create;
   t.LoadFromFile(ExtractFilePath(ParamStr(0))+'20k_c1.txt');
@@ -61,6 +64,7 @@ begin
     Writer(10,' you can take a peek at the developer versions.');
     SaveToFile(GetUserDir + '/JPFpdfTESTE.pdf');
     Free;
+    WriteLn(FormatDateTime('hh:mm:ss:zzz',now-hh));
   end;
 end.
 
