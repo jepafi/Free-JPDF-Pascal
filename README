@@ -1,4 +1,41 @@
-This is version 1.2 Stable of the library "Free JPDF Pascal".
+This is version 1.32 Stable of the library "Free JPDF Pascal".
+
+New's in Version 1.32:
+	- Fixed definitely the mistake with the decimal point (especially on Windows);
+
+	- Some corrections were made for performance (speed of generation and memory usage) mentioned here in the forum. For example, were removed SetLength with very high initial values​​. Now were as follows:
+	   SetLength(Self.offsets, 3);
+	   SetLength(Self.pages, 1);
+	   SetLength(Self.OrientationChanges, 1);
+
+	The sample is generated in less than 240 milliseconds.
+
+	New methods have been present since version 1.31:
+
+	SaveToFile
+	SaveToStream
+	SaveToString
+	CreateContentStream(csToViewBrowser)
+	CreateContentStream(csToDownload)
+
+	The last two are for use in applications CGI with fcl-web or fp-web. Thus:
+
+	To view the Browser (Adobe plugin):
+
+	AResponse.ContentType := 'application/pdf';
+	AResponse.ContentStream := JPDF1.CreateContentStream(csToViewBrowser);
+
+	or simply:
+
+	AResponse.ContentType := 'application/pdf';
+	AResponse.ContentStream := JPDF1.CreateContentStream;
+
+	To download directly from the Browser:
+
+	AResponse.ContentType := 'application/x-download';
+	AResponse.ContentStream := JPDF1.CreateContentStream(csToDownload);
+
+---
 
 Resources:
 - Support Image (JPG or JPEG, PNG, GIF and BMP);
