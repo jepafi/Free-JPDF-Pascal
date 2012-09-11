@@ -1,13 +1,17 @@
-Esta é a Versão 1.2 estável da biblioteca "Free JPDF Pascal".
+Esta é a Versão 1.33 estável da biblioteca "Free JPDF Pascal".
 
 A biblioteca "Free JPDF Pascal" foi escrita totalmente em "Free Pascal" puro. 
 Ela foi criada a partir da conversão e readaptação do código da 
 biblioteca FPDF escrita em PHP (http://www.fpdf.org).
 
-Obs: Esta versão trabalha com codificação Ansi. 
+Obs: Esta versão trabalha com codificação ISO-8859-1. 
      Assim, se o texto ou o arquivo contendo o texto estiver em UTF8, 
-     use a função <b>UTF8ToAnsi</b> para converter o texto. 
-     Isto só é necessário se o texto contiver acentos.
+     insira no código SetUTF8(True) antes de usar as funções de texto.
+     Se ainda assim não funcionar, usando um editor de texto, por exemplo, 
+     Geany (Linux/Windows) ou Notepad++ (Windows), converta o arquivo
+     que contém o código fonte que constroi o seu relatório para a 
+     codificação ISO-8859-1.
+     Lembre-se, isto só é necessário se o texto contiver acentos.
 
 Recursos:
 - Suporte a Imagens (JPG ou JPEG, PNG, GIF e BMP);

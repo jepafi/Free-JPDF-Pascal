@@ -5,13 +5,13 @@ Free JPDF Pascal
 Based on the library FPDF written in PHP by Olivier PLATHEY and
 the Code25 method was based on PHP script created by Matthias Lau
 
-Author: Jean Patrick - jpsoft-sac-pa@hotmail.com - www.jpsoft.com.br
+Author: Jean Patrick - jpsoft-sac-pa@hotmail.com - www.jeansistemas.net
 
 Contribution: Gilson Nunes - Use of enumerators and resolved bug related to decimal point.
 
 Date: 08/06/2012
 
-Version: 1.32 Stable
+Version: 1.33 Stable
 
 License: You can freely use and modify this library for commercial purposes or not,
          provided you keep the credits to the author and his contributors.
@@ -153,6 +153,7 @@ type
     hLasth: double;              // height of last cell printed
     pgK: double;                  // scale factor (number of points in user unit)
     pLineWidth: double;          // line width in user unit
+    pUTF8: boolean;              // Set UTF8Decode to Windows
     pFonts: array of TJPFont;          // array of used fonts
     pImages: array of TJPImageInfo;    // array of used images
     cFontFamily: TPDFFontFamily;       // current font family
@@ -181,6 +182,7 @@ type
       pageUnit: TPDFUnit = puMM; pageFormat: TPDFPageFormat = pfA4);
     procedure SetMargins(marginLeft: double; marginTop: double;
       marginRight: double = -1);
+    procedure SetUTF8(mode: Boolean = False);
     procedure SetLeftMargin(marginLeft: double);
     procedure SetRightMargin(marginRight: double);
     procedure SetAutoPageBreak(vAuto: boolean; vMargin: double = 0.0);
@@ -250,6 +252,7 @@ var
   ssmargin: double;
 begin
   //Initialization of properties
+  SetUTF8(False);
   Self.page := 0;
   Self.numObj := 2;
   Self.buffer := TMemoryStream.Create;
@@ -338,6 +341,11 @@ begin
     Self.rMargin := Self.lMargin
   else
     Self.rMargin := marginRight;
+end;
+
+procedure TJPFpdf.SetUTF8(mode: Boolean);
+begin
+  pUTF8 := mode;
 end;
 
 procedure TJPFpdf.SetLeftMargin(marginLeft: double);
@@ -592,7 +600,7 @@ begin
     vstyle := fsNormal;
   vw := 0;
   vl := Length(vText);
-  for vi := 0 to vl do
+  for vi := 1 to vl do
     vw += Self.Jpdf_charwidths[vfamily][vstyle][Ord(vText[vi])];
   Result := vw * Self.cFontSize / 1000;
 end;
@@ -658,6 +666,7 @@ procedure TJPFpdf.Text(vX, vY: double; vText: string);
 var
   sss: string;
 begin
+  if (pUTF8) then vText := UTF8Decode(vText);
   //Output a string
   vText := StringReplace(StringReplace(
     StringReplace(vText, '\', '\\', [rfReplaceAll]), ')', '\)', [rfReplaceAll]),
@@ -684,7 +693,14 @@ var
   vi: integer;
   vsep: integer;
   vc: char;
+  fUTF8: Boolean;
 begin
+  fUTF8 := False;
+  if (pUTF8) then begin
+    vText := UTF8Decode(vText);
+    SetUTF8(False);
+    fUTF8 := True;
+  end;
   //Output text in flowing mode
   vfamily := Self.cFontFamily;
   vstyle := Self.cFontStyle;
@@ -769,6 +785,7 @@ begin
       14, 2, TPDFFormatSetings), TPDFFormatSetings);
     Cell(vw, vHeight, Copy(vs, vj, vi), '0', 0, '', 0);
   end;
+  if (fUTF8) then SetUTF8(True);
 end;
 
 function TJPFpdf.AcceptPageBreak: boolean;
@@ -825,6 +842,7 @@ var
   vws, vx, vy, vdx: double;
   sss: string;
 begin
+  if (pUTF8) then vText := UTF8Decode(vText);
   //Output a cell
   if (((Self.cpY + vHeight) > Self.PageBreakTrigger) and not
     (Self.InFooter) and (AcceptPageBreak())) then
@@ -923,7 +941,14 @@ var
   vs: string;
   vnb, vsep, vi, vj, vl, vns, vnl, vls: integer;
   vwmax: double;
+  fUTF8: boolean;
 begin
+  fUTF8 := False;
+  if (pUTF8) then begin
+    vText := UTF8Decode(vText);
+    SetUTF8(False);
+    fUTF8 := True;
+  end;
   vfamily := Self.cFontFamily;
   vstyle := Self.cFontStyle;
   if (vfamily in [ffCourier, ffSymbol, ffZapfdingbats]) then
@@ -1044,6 +1069,7 @@ begin
     vb += 'B';
   Cell(vWidth, vHeight, Copy(vs, vj, vi - vj), vb, 2, vAlign, vFill);
   Self.cpX := Self.lMargin;
+  if (fUTF8) then SetUTF8(True);
 end;
 
 procedure TJPFpdf.Ln(vHeight: double);
@@ -1510,7 +1536,7 @@ begin
     end;
   end;
   if (n = 0) then
-    Error('Fonte não foi encontrada: ' + vfontname);
+    Error('Font not found: ' + vfontname);
   if (Self.page > 0) then
     _out('BT /F' + IntToStr(n) + ' ' + FloatToStrF(Self.cFontSize,
       ffNumber, 14, 2, TPDFFormatSetings) + ' Tf ET');
@@ -1603,14 +1629,14 @@ var
 begin
   //Underline text
   vsp := 0;
-  for i := 0 to Length(vText) do
+  for i := 1 to Length(vText) do
     if (vText[i] = ' ') then
       vsp := vsp + 1;
   up := -100;
   ut := 50;
   vw := GetStringWidth(vText) + Self.pgWs * vsp;
   Result := format('%.2F -%.2F %.2F -%.2F re f',
-    [vX, (vY - up / 1000 * Self.cFontSize), vw - (GetStringWidth(' ') / 2),
+    [vX, (vY - up / 1000 * Self.cFontSize), vw,
     (ut / 1000 * Self.cFontSize)],TPDFFormatSetings);
 end;
 
@@ -1685,6 +1711,7 @@ var
   vbar: integer;
   vlineWidth: double;
 begin
+  if (pUTF8) then vTextCode := UTF8Decode(vTextCode);
   vwide := vBaseWidth;
   vnarrow := vBaseWidth / 3;
 

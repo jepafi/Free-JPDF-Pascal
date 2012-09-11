@@ -15,7 +15,7 @@ BT /F1 5.64 Tf ET
 1 0 0 RG
 0.3 w
 1 1 0 rg
-10 -10 190 -10 re f 10 -10 m 10 -20 l S 10 -10 m 200 -10 l S 200 -10 m 200 -20 l S 10 -20 m 200 -20 l S q 0 g BT 81.18228 -16.692 Td (JUSTIFIED TEXT) Tj ET Q
+10 -10 190 -10 re f 10 -10 m 10 -20 l S 10 -10 m 200 -10 l S 200 -10 m 200 -20 l S 10 -20 m 200 -20 l S q 0 g BT 81.88728 -16.692 Td (JUSTIFIED TEXT) Tj ET Q
 BT /F2 4.94 Tf ET
 0.205 Tw
 q 0 g BT 11 -34.732 Td (During the period in which these developments were occurring, I had returned from a) Tj ET Q
@@ -104,7 +104,7 @@ endobj
 /Contents 6 0 R>>
 endobj
 6 0 obj
-<</Length 3166>>
+<</Length 3557>>
 stream
 2.834646 0 0 2.834646 0 841.89 cm
 2 J
@@ -168,6 +168,16 @@ q 0 g BT 11 -183.732 Td (between two alternatives.) Tj ET Q
 q 0 g BT 11 -190.232 Td ("Either we know every variety of creature populating our planet, or we do not.) Tj ET Q
 0 Tw
 q 0 g BT 11 -196.732 Td (\(continue ...\)) Tj ET Q
+BT /F3 6.35 Tf ET
+10 -211.5 m 200 -211.5 l S q 0 g BT 85.5944 -210.155 Td (UTF8Decode) Tj ET Q
+BT /F4 5.64 Tf ET
+q 0 g BT 11 -222.942 Td (SetUTF8\(False\) = ) Tj ET Q
+BT /F5 5.64 Tf ET
+q 0 g BT 68.53 -222.942 Td (AviÃ£o Ãndio CarroÃ§a) Tj ET Q
+BT /F4 5.64 Tf ET
+q 0 g BT 11 -229.442 Td (SetUTF8\(True\) = ) Tj ET Q
+BT /F5 5.64 Tf ET
+q 0 g BT 65.14 -229.442 Td (Avião Índio Carroça) Tj ET Q
 endstream
 endobj
 7 0 obj
@@ -178,12 +188,11 @@ endobj
 /Contents 8 0 R>>
 endobj
 8 0 obj
-<</Length 395>>
+<</Length 377>>
 stream
 2.834646 0 0 2.834646 0 595.28 cm
 2 J
 0.3 w
-BT /F2 4.94 Tf ET
 1 0 0 RG
 1 1 0 rg
 BT /F3 5.64 Tf ET
@@ -192,7 +201,7 @@ q 0.384 0.576 0.780 rg BT 11 -26.692 Td (Free Jpdf Pascal) Tj ET Q
 90 -10 m 100 -100 l S
 0.694 0.125 0.039 rg
 50 -50 100 -100 re f
-BT /F4 14.11 Tf ET
+BT /F6 14.11 Tf ET
 q 0.360 1 0.4 rg BT 20 -180 Td (PDF for Free Pascal Web) Tj ET 20.00 -181.41 151.27 -0.71 re f Q
 endstream
 endobj
@@ -211,12 +220,12 @@ stream
 1 0 0 RG
 0.694 0.125 0.039 rg
 BT /F3 5.64 Tf ET
-10 -10 60 -10 re S q 0.360 1 0.4 rg BT 16.80268 -16.692 Td (Free Jpdf Pascal) Tj ET Q
-70 -10 60 -10 re S q 0.360 1 0.4 rg BT 76.80268 -16.692 Td (Free Jpdf Pascal) Tj ET Q
+10 -10 60 -10 re S q 0.360 1 0.4 rg BT 17.58664 -16.692 Td (Free Jpdf Pascal) Tj ET Q
+70 -10 60 -10 re S q 0.360 1 0.4 rg BT 77.58664 -16.692 Td (Free Jpdf Pascal) Tj ET Q
 q 80 0 0 75 40 -115 cm /I1 Do Q
 q 120 0 0 75 40 -195 cm /I2 Do Q
 q 100 0 0 60 40 -260 cm /I3 Do Q
-BT /F5 5.64 Tf ET
+BT /F7 5.64 Tf ET
 q 0 g BT 100 -140 Td (Free Jpdf Pascal) Tj ET 100.00 -140.56 54.14 -0.28 re f Q
 endstream
 endobj
@@ -232,11 +241,11 @@ stream
 2.834646 0 0 2.834646 0 841.89 cm
 2 J
 0.3 w
-BT /F5 5.64 Tf ET
+BT /F7 5.64 Tf ET
 1 0 0 RG
 0.694 0.125 0.039 rg
 BT /F2 3.53 Tf ET
-q 0 g BT 10 -54 Td (005379360100094362094200000008872000000000000000) Tj ET Q
+q 0 g BT 10 -60 Td (005379360100094362094200000008872000000000000000) Tj ET Q
 0 g
 10 -40 0.33333333333333 -10 re f
 10.6666666666667 -40 0.33333333333333 -10 re f
@@ -362,14 +371,14 @@ q 0 g BT 10 -54 Td (005379360100094362094200000008872000000000000000) Tj ET Q
 154.666666666667 -40 0.33333333333333 -10 re f
 155.333333333333 -40 1 -10 re f
 156.666666666667 -40 0.33333333333333 -10 re f
-BT /F4 5.64 Tf ET
+BT /F6 5.64 Tf ET
 BT 11 -16.692 Td (Free Pascal is always ) Tj ET 11.00 -17.26 51.39 -0.28 re f
 BT /F1 5.64 Tf ET
 BT 62.39 -16.692 Td (under development.) Tj ET 62.39 -17.26 47.94 -0.28 re f
-BT /F6 5.64 Tf ET
+BT /F8 5.64 Tf ET
 BT 110.33 -16.692 Td ( If you want to see how the ) Tj ET
 BT 11 -26.692 Td (development is progressing ) Tj ET
-BT /F7 5.64 Tf ET
+BT /F5 5.64 Tf ET
 BT 73.03 -26.692 Td ( you can take a peek at the developer versions.) Tj ET
 endstream
 endobj
@@ -397,32 +406,39 @@ endobj
 16 0 obj
 <</Type /Font
 /Subtype /Type1
-/BaseFont /Times-BoldItalic
+/BaseFont /Courier
 /Encoding /WinAnsiEncoding
 >>
 endobj
 17 0 obj
 <</Type /Font
 /Subtype /Type1
-/BaseFont /Courier-BoldOblique
+/BaseFont /Times-Roman
 /Encoding /WinAnsiEncoding
 >>
 endobj
 18 0 obj
 <</Type /Font
 /Subtype /Type1
-/BaseFont /Times-Italic
+/BaseFont /Times-BoldItalic
 /Encoding /WinAnsiEncoding
 >>
 endobj
 19 0 obj
 <</Type /Font
 /Subtype /Type1
-/BaseFont /Times-Roman
+/BaseFont /Courier-BoldOblique
 /Encoding /WinAnsiEncoding
 >>
 endobj
 20 0 obj
+<</Type /Font
+/Subtype /Type1
+/BaseFont /Times-Italic
+/Encoding /WinAnsiEncoding
+>>
+endobj
+21 0 obj
 <</Type /XObject
 /Subtype /Image
 /Width 680
@@ -701,7 +717,7 @@ DÑ/,ÍÈ jpcm¸oïPùâ]MàFÆøö~\ÿ ˆ¢y”×­N&>Ò*+k›W’åHƒþZ*ƒœŽG¥P¿¹‘îU!b¾X$‘ëS}¤
 (­êü,ïŸÀËšZH}<±Óéšy3ƒŸ¥Wá—©Ž¨õq¹°¨[=*DÌªåœ”Q]Œêe€“€6ÈÅ»’£QE ÿÙ
 endstream
 endobj
-21 0 obj
+22 0 obj
 <</Type /XObject
 /Subtype /Image
 /Width 630
@@ -811,7 +827,7 @@ pBjÀŒÔí´\
 ô”QHŠ( Š( Š( Š( Š( Š( ïER ¥¢Š (¢Š )ÅP´ÓÖŠ)HhJJ(©¸â›EØ%R ¢Š(ÿÙ
 endstream
 endobj
-22 0 obj
+23 0 obj
 <</Type /XObject
 /Subtype /Image
 /Width 320
@@ -915,54 +931,56 @@ endobj
 /F5 17 0 R
 /F6 18 0 R
 /F7 19 0 R
+/F8 20 0 R
 >>
 /XObject <<
-/I1 20 0 R
-/I2 21 0 R
-/I3 22 0 R
+/I1 21 0 R
+/I2 22 0 R
+/I3 23 0 R
 >>
 >>
-endobj
-23 0 obj
-<</Producer (Free JPDF Pascal 1.0 Stable)
-/CreationDate (D:15-06-2012 18:00:01)>>
 endobj
 24 0 obj
+<</Producer (Free JPDF Pascal 1.0 Stable)
+/CreationDate (D:11-09-2012 15:16:52)>>
+endobj
+25 0 obj
 <</Type /Catalog
 /OpenAction [3 0 R /FitH null]
 /Pages 1 0 R>>
 endobj
 xref
-0 25
+0 26
 0000000000 65535 f 
-0000109279 00000 n 
-0000109391 00000 n 
+0000109747 00000 n 
+0000109859 00000 n 
 0000000009 00000 n 
 0000000087 00000 n 
 0000004950 00000 n 
 0000005028 00000 n 
-0000008243 00000 n 
-0000008351 00000 n 
-0000008794 00000 n 
-0000008873 00000 n 
-0000009382 00000 n 
-0000009462 00000 n 
-0000014872 00000 n 
-0000014970 00000 n 
-0000015067 00000 n 
-0000015169 00000 n 
-0000015273 00000 n 
-0000015380 00000 n 
-0000015480 00000 n 
-0000015579 00000 n 
-0000080565 00000 n 
-0000096304 00000 n 
-0000109594 00000 n 
-0000109692 00000 n 
+0000008634 00000 n 
+0000008742 00000 n 
+0000009167 00000 n 
+0000009246 00000 n 
+0000009755 00000 n 
+0000009835 00000 n 
+0000015245 00000 n 
+0000015343 00000 n 
+0000015440 00000 n 
+0000015542 00000 n 
+0000015637 00000 n 
+0000015736 00000 n 
+0000015840 00000 n 
+0000015947 00000 n 
+0000016047 00000 n 
+0000081033 00000 n 
+0000096772 00000 n 
+0000110073 00000 n 
+0000110171 00000 n 
 trailer
-<</Size 25
-/Root 24 0 R
-/Info 23 0 R>>
+<</Size 26
+/Root 25 0 R
+/Info 24 0 R>>
 startxref
-109771
+110250
 %%EOF
