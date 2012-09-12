@@ -85,51 +85,6 @@ type
     function _escape(sText: string): string;
     procedure _out(sText: string);
   public
-  const
-    {$i inc_fontes.inc}
-    TPDFFormatSetings: TFormatSettings = (
-      CurrencyFormat: 1;
-      NegCurrFormat: 5;
-      ThousandSeparator: #0;
-      DecimalSeparator: '.';
-      CurrencyDecimals: 2;
-      DateSeparator: '-';
-      TimeSeparator: ':';
-      ListSeparator: ',';
-      CurrencyString: '$';
-      ShortDateFormat: 'd/m/y';
-      LongDateFormat: 'dd" "mmmm" "yyyy';
-      TimeAMString: 'AM';
-      TimePMString: 'PM';
-      ShortTimeFormat: 'hh:nn';
-      LongTimeFormat: 'hh:nn:ss';
-      ShortMonthNames: ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
-      LongMonthNames: ('January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December');
-      ShortDayNames: ('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat');
-      LongDayNames: ('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-      'Friday', 'Saturday');
-      TwoDigitYearCenturyWindow: 50;
-      );
-    JORIENTATION: array[TPDFOrientation] of char = ('P', 'L', #0);
-    JUNIT: array[TPDFUnit] of double = (1, 72 / 25.4, 72 / 2.54, 72);
-    JFORMAT_W: array[TPDFPageFormat] of double = (841.89, 595.28, 420.94, 612, 612);
-    JFORMAT_H: array[TPDFPageFormat] of double = (1190.55, 841.89, 595.28, 792, 1008);
-    JCOLOR_R: array[TJPColor] of smallint =
-      (0, 192, 128, 255, 128, 255, 128, 255, 0, 0, 128, 255, 0, 0, 0, 0);
-    JCOLOR_G: array[TJPColor] of smallint =
-      (0, 192, 128, 255, 0, 0, 0, 0, 128, 255, 128, 255, 0, 0, 128, 255);
-    JCOLOR_B: array[TJPColor] of smallint =
-      (0, 192, 128, 255, 0, 0, 128, 255, 0, 0, 0, 0, 128, 255, 128, 255);
-    JFONTFAMILY: array[TPDFFontFamily] of shortstring =
-      ('Courier', 'Helvetica', 'Times', 'Symbol', 'Zapfdingbats');
-    JFONTSTYLE: array[TPDFFontStyle] of shortstring =
-      ('', '-Bold', '-Oblique', '-BoldOblique');
-    JDISPLAYMODE: array[TPDFDisplayMode] of shortstring =
-      ('fullpage', 'fullwidth', 'real', 'default', 'zoom');
-    FREE_JPDF_PASCAL_VERSION = '1.0 Stable';
-  var
     page: integer;               // current page number
     numObj: integer;             // current object number
     offsets: array of integer;   // array of object offsets
@@ -245,6 +200,50 @@ implementation
 
 { TJPFpdf }
 
+const
+  {$i inc_fontes.inc}
+  TPDFFormatSetings: TFormatSettings = (
+    CurrencyFormat: 1;
+    NegCurrFormat: 5;
+    ThousandSeparator: #0;
+    DecimalSeparator: '.';
+    CurrencyDecimals: 2;
+    DateSeparator: '-';
+    TimeSeparator: ':';
+    ListSeparator: ',';
+    CurrencyString: '$';
+    ShortDateFormat: 'd/m/y';
+    LongDateFormat: 'dd" "mmmm" "yyyy';
+    TimeAMString: 'AM';
+    TimePMString: 'PM';
+    ShortTimeFormat: 'hh:nn';
+    LongTimeFormat: 'hh:nn:ss';
+    ShortMonthNames: ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
+    LongMonthNames: ('January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December');
+    ShortDayNames: ('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat');
+    LongDayNames: ('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+    'Friday', 'Saturday');
+    TwoDigitYearCenturyWindow: 50;
+    );
+  JORIENTATION: array[TPDFOrientation] of char = ('P', 'L', #0);
+  JUNIT: array[TPDFUnit] of double = (1, 72 / 25.4, 72 / 2.54, 72);
+  JFORMAT_W: array[TPDFPageFormat] of double = (841.89, 595.28, 420.94, 612, 612);
+  JFORMAT_H: array[TPDFPageFormat] of double = (1190.55, 841.89, 595.28, 792, 1008);
+  JCOLOR_R: array[TJPColor] of smallint =
+    (0, 192, 128, 255, 128, 255, 128, 255, 0, 0, 128, 255, 0, 0, 0, 0);
+  JCOLOR_G: array[TJPColor] of smallint =
+    (0, 192, 128, 255, 0, 0, 0, 0, 128, 255, 128, 255, 0, 0, 128, 255);
+  JCOLOR_B: array[TJPColor] of smallint =
+    (0, 192, 128, 255, 0, 0, 128, 255, 0, 0, 0, 0, 128, 255, 128, 255);
+  JFONTFAMILY: array[TPDFFontFamily] of shortstring =
+    ('Courier', 'Helvetica', 'Times', 'Symbol', 'Zapfdingbats');
+  JFONTSTYLE: array[TPDFFontStyle] of shortstring =
+    ('', '-Bold', '-Oblique', '-BoldOblique');
+  JDISPLAYMODE: array[TPDFDisplayMode] of shortstring =
+    ('fullpage', 'fullwidth', 'real', 'default', 'zoom');
+  FREE_JPDF_PASCAL_VERSION = '1.0 Stable';
 
 constructor TJPFpdf.Create(orientation: TPDFOrientation; pageUnit: TPDFUnit;
   pageFormat: TPDFPageFormat);
