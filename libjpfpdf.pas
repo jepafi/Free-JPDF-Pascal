@@ -135,6 +135,7 @@ type
     array [0..255] of integer; // widths of the characters of fonts
     constructor Create(orientation: TPDFOrientation = poPortrait;
       pageUnit: TPDFUnit = puMM; pageFormat: TPDFPageFormat = pfA4);
+    destructor Destroy; override;
     procedure SetMargins(marginLeft: double; marginTop: double;
       marginRight: double = -1);
     procedure SetUTF8(mode: Boolean = False);
@@ -329,6 +330,12 @@ begin
   SetDisplayMode(dmFullWidth);
   //Compression
   SetCompression(False);
+end;
+
+destructor TJPFpdf.Destroy;
+begin
+  Self.buffer.Free;
+  inherited Destroy;
 end;
 
 procedure TJPFpdf.SetMargins(marginLeft: double; marginTop: double; marginRight: double);
