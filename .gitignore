@@ -1,0 +1,9 @@
+*.[oa]
+*.ppu
+*.lps
+*.compiled
+*.bak*
+*.exe
+*.dll
+*.so
+*.bat
