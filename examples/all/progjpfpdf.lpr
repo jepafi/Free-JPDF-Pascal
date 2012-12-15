@@ -80,5 +80,6 @@ begin
     Free;
     WriteLn(FormatDateTime('hh:mm:ss:zzz',now-hh));
   end;
+  t.Free;
 end.
 
