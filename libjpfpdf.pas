@@ -1395,8 +1395,9 @@ begin
     _out('/Keywords (' + _escape(Self.DocKeywords) + ')');
   if (Self.DocCreator <> '') then
     _out('/Creator (' + _escape(Self.DocCreator) + ')');
-  _out('/CreationDate (D:' + FormatDateTime('dd-mm-yyy', date) + ' ' +
-    FormatDateTime('hh:mm:ss', now) + ')>>');
+
+  _out('/ModDate (D:' + FormatDateTime('yyyymmddhhnnss', now) +')');
+  _out('/CreationDate (D:' + FormatDateTime('yyyymmddhhnnss', now) +')>>');
   _out('endobj');
   //Catalog
   _newobj();
