@@ -34,7 +34,7 @@ end;
 procedure TPdf.Footer;
 begin
   // Position at 1.5 cm from bottom
-  SetY(-15);
+  SetY(Self.fh -15);
   // Arial italic 8
   SetFont(ffHelvetica,fsItalic,8);
   // Page number
