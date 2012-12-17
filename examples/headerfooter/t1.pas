@@ -8,6 +8,7 @@ uses
 
 type
   TPdf = class(TJPFpdf)
+  public
     procedure Header; override;
     procedure Footer; override;
   end;
