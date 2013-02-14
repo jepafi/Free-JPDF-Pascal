@@ -30,7 +30,7 @@ uses
   {$ENDIF}{$ENDIF}
   Classes, SysUtils, zstream, FPimage,
   FPReadPNG, FPReadBMP, FPReadGif,
-  FPWriteJPEG, FPReadJPEG;
+  FPWriteJPEG, FPReadJPEG, LCLProc;
 
 type
   TJPImageInfo = record
@@ -108,7 +108,7 @@ type
     hLasth: double;              // height of last cell printed
     pgK: double;                  // scale factor (number of points in user unit)
     pLineWidth: double;          // line width in user unit
-    pUTF8: boolean;              // Set UTF8Decode to Windows
+    pUTF8: boolean;              // Set UTF8ToUTF16 to suport unicode
     pFonts: array of TJPFont;          // array of used fonts
     pImages: array of TJPImageInfo;    // array of used images
     cFontFamily: TPDFFontFamily;       // current font family
@@ -135,6 +135,7 @@ type
     array [0..255] of integer; // widths of the characters of fonts
     constructor Create(orientation: TPDFOrientation = poPortrait;
       pageUnit: TPDFUnit = puMM; pageFormat: TPDFPageFormat = pfA4);
+    destructor Destroy; override;
     procedure SetMargins(marginLeft: double; marginTop: double;
       marginRight: double = -1);
     procedure SetUTF8(mode: Boolean = False);
@@ -148,13 +149,11 @@ type
     procedure SetAuthor(vAuthor: string);
     procedure SetKeywords(vKeywords: string);
     procedure SetCreator(vCreator: string);
-    procedure AliasNbPages(vAlias: string = '/{nb/}');
+    procedure AliasNbPages(vAlias: string = '{nb}');
     procedure Error(TextMsg: string);
     procedure Open;
     procedure Close;
     procedure AddPage(Orientation: TPDFOrientation = poDefault);
-    procedure Header;
-    procedure Footer;
     function PageNo: integer;
     procedure SetDrawColor(ValR: integer; ValG: integer = -1; ValB: integer = -1);
     procedure SetFillColor(ValR: integer; ValG: integer = -1; ValB: integer = -1);
@@ -194,6 +193,8 @@ type
     function CreateContentStream(cs: TPDFContentStream = csToViewBrowser): TStream;
     procedure Code25(vXPos, vYPos: double; vTextCode: string;
       vBaseWidth: double = 1.00; vHeight: double = 10.00);
+    procedure Header; Virtual;
+    procedure Footer; Virtual;
   end;
 
 implementation
@@ -329,6 +330,12 @@ begin
   SetDisplayMode(dmFullWidth);
   //Compression
   SetCompression(False);
+end;
+
+destructor TJPFpdf.Destroy;
+begin
+  Self.buffer.Free;
+  inherited Destroy;
 end;
 
 procedure TJPFpdf.SetMargins(marginLeft: double; marginTop: double; marginRight: double);
@@ -516,16 +523,6 @@ begin
   Self.pColorFlag := vcf;
 end;
 
-procedure TJPFpdf.Header;
-begin
-  // To be implemented in your own inherited class
-end;
-
-procedure TJPFpdf.Footer;
-begin
-  // To be implemented in your own inherited class
-end;
-
 function TJPFpdf.PageNo: integer;
 begin
   //Get current page number
@@ -665,7 +662,7 @@ procedure TJPFpdf.Text(vX, vY: double; vText: string);
 var
   sss: string;
 begin
-  if (pUTF8) then vText := UTF8Decode(vText);
+  if (pUTF8) then vText := UTF8ToUTF16(vText);
   //Output a string
   vText := StringReplace(StringReplace(
     StringReplace(vText, '\', '\\', [rfReplaceAll]), ')', '\)', [rfReplaceAll]),
@@ -696,7 +693,7 @@ var
 begin
   fUTF8 := False;
   if (pUTF8) then begin
-    vText := UTF8Decode(vText);
+    vText := UTF8ToUTF16(vText);
     SetUTF8(False);
     fUTF8 := True;
   end;
@@ -841,7 +838,7 @@ var
   vws, vx, vy, vdx: double;
   sss: string;
 begin
-  if (pUTF8) then vText := UTF8Decode(vText);
+  if (pUTF8) then vText := UTF8ToUTF16(vText);
   //Output a cell
   if (((Self.cpY + vHeight) > Self.PageBreakTrigger) and not
     (Self.InFooter) and (AcceptPageBreak())) then
@@ -944,7 +941,7 @@ var
 begin
   fUTF8 := False;
   if (pUTF8) then begin
-    vText := UTF8Decode(vText);
+    vText := UTF8ToUTF16(vText);
     SetUTF8(False);
     fUTF8 := True;
   end;
@@ -1283,7 +1280,7 @@ begin
     //Replace number of pages
     for vn := 1 to vnb do
       Self.pages[vn] := StringReplace(Self.pages[vn], Self.DocAliasNbPages,
-        IntToStr(vnb), []);
+        FormatFloat(StringOfChar('0',Length(Self.DocAliasNbPages)),vnb), []);
   end;
   if (JORIENTATION[Self.DefOrientation] = 'P') then
   begin
@@ -1405,8 +1402,9 @@ begin
     _out('/Keywords (' + _escape(Self.DocKeywords) + ')');
   if (Self.DocCreator <> '') then
     _out('/Creator (' + _escape(Self.DocCreator) + ')');
-  _out('/CreationDate (D:' + FormatDateTime('dd-mm-yyy', date) + ' ' +
-    FormatDateTime('hh:mm:ss', now) + ')>>');
+
+  _out('/ModDate (D:' + FormatDateTime('yyyymmddhhnnss', now) +')');
+  _out('/CreationDate (D:' + FormatDateTime('yyyymmddhhnnss', now) +')>>');
   _out('endobj');
   //Catalog
   _newobj();
@@ -1539,6 +1537,16 @@ begin
   if (Self.page > 0) then
     _out('BT /F' + IntToStr(n) + ' ' + FloatToStrF(Self.cFontSize,
       ffNumber, 14, 2, TPDFFormatSetings) + ' Tf ET');
+end;
+
+procedure TJPFpdf.Header;
+begin
+  // Implementing an inheritance, if necessary
+end;
+
+procedure TJPFpdf.Footer;
+begin
+  // Implementing an inheritance, if necessary
 end;
 
 function TJPFpdf._escape(sText: string): string;
@@ -1710,7 +1718,7 @@ var
   vbar: integer;
   vlineWidth: double;
 begin
-  if (pUTF8) then vTextCode := UTF8Decode(vTextCode);
+  if (pUTF8) then vTextCode := UTF8ToUTF16(vTextCode);
   vwide := vBaseWidth;
   vnarrow := vBaseWidth / 3;
 
