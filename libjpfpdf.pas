@@ -28,9 +28,8 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Classes, SysUtils, zstream, FPimage,
-  FPReadPNG, FPReadBMP, FPReadGif,
-  FPWriteJPEG, FPReadJPEG, LCLProc;
+  Classes, SysUtils, zstream, FPimage, FPReadPNG, FPReadBMP, FPReadGif,
+  FPWriteJPEG, FPReadJPEG, ssl_openssl, httpsend;
 
 type
   TJPImageInfo = record
@@ -53,22 +52,30 @@ type
     number: integer;
   end;
 
+  TCW = array [0..255] of integer;
   TJPColor = (cBlack, cSilver, cGray, cWhite, cMaroon, cRed, cPurple, cFuchsia,
-    cGreen, cLime, cOlive, cYellow, cNavy, cBlue, cTeal, cAqua);
+    cGreen, cLime, cOlive, cYellow, cNavy, cBlue, cTeal, cAqua, cLightGrey);
   TPDFOrientation = (poPortrait, poLandscape, poDefault);
-  TPDFUnit = (puPT, puMM, puCM, puIN);
+  TPDFUnit = (puPT, puMM, puCM, puIN, puPX);
   TPDFPageFormat = (pfA3, pfA4, pfA5, pfLetter, pfLegal);
   TPDFFontFamily = (ffCourier, ffHelvetica, ffTimes, ffSymbol, ffZapfdingbats);
   TPDFFontStyle = (fsNormal, fsBold, fsItalic, fsBoldItalic);
   TPDFDisplayMode = (dmFullPage, dmFullWidth, dmReal, dmDefault, dmZoom);
   TPDFContentStream = (csToViewBrowser, csToDownload);
+  TPDFBarCode128 = (pdfbcCode128A, pdfbcCode128B, pdfbcCode128C);
 
   { TJPFpdf }
 
   TJPFpdf = class
   private
+    FProxyHost: string;
+    FProxyPass: string;
+    FProxyPort: string;
+    FProxyUser: string;
     function FontWasUsed(font: string): boolean;
+    function GetImageFromURL(const aURL: string; const aResponse: TStream): Boolean;
     function GetInfoImage(imgFile: string): TJPImageInfo;
+    function GetInfoImage(vImageStream: TStream; vTypeImageExt: String): TJPImageInfo; overload;
     function GzCompress(StrIn: string; CompLevel: TCompressionLevel = clMax): string;
     function GzDecompress(StrIn: string): string;
     function _dounderline(vX, vY: double; vText: string): string;
@@ -108,7 +115,7 @@ type
     hLasth: double;              // height of last cell printed
     pgK: double;                  // scale factor (number of points in user unit)
     pLineWidth: double;          // line width in user unit
-    pUTF8: boolean;              // Set UTF8ToUTF16 to suport unicode
+    pUTF8: boolean;              // Set Utf8ToAnsi to suport unicode
     pFonts: array of TJPFont;          // array of used fonts
     pImages: array of TJPImageInfo;    // array of used images
     cFontFamily: TPDFFontFamily;       // current font family
@@ -133,12 +140,15 @@ type
     DocAliasNbPages: string;       // alias for total number of pages
     Jpdf_charwidths: array[TPDFFontFamily] of array[TPDFFontStyle] of
     array [0..255] of integer; // widths of the characters of fonts
-    constructor Create(orientation: TPDFOrientation = poPortrait;
-      pageUnit: TPDFUnit = puMM; pageFormat: TPDFPageFormat = pfA4);
+    constructor Create;
+    constructor Create(orientation: TPDFOrientation; pageUnit: TPDFUnit;
+      pageFormat: TPDFPageFormat); overload;
+    constructor Create(orientation: TPDFOrientation; pageUnit: TPDFUnit;
+      pageSizeW: Double; pageSizeH: Double = 0); overload;
     destructor Destroy; override;
     procedure SetMargins(marginLeft: double; marginTop: double;
       marginRight: double = -1);
-    procedure SetUTF8(mode: Boolean = False);
+    procedure SetUTF8(mode: Boolean = True);
     procedure SetLeftMargin(marginLeft: double);
     procedure SetRightMargin(marginRight: double);
     procedure SetAutoPageBreak(vAuto: boolean; vMargin: double = 0.0);
@@ -179,8 +189,10 @@ type
       vFill: integer = 0);
     procedure MultiCell(vWidth, vHeight: double; vText: string;
       vBorder: string = '0'; vAlign: string = 'J'; vFill: integer = 0);
-    procedure Image(vFile: string; vX: double; vY: double; vWidth: double;
+    procedure Image(vFileOrURL: string; vX: double; vY: double; vWidth: double;
       vHeight: double = 0.0);
+    procedure Image(vImageStream: TStream; vTypeImageExt: String; vX: double;
+      vY: double; vWidth: double; vHeight: double = 0.0); overload;
     procedure Ln(vHeight: double = 0);
     function GetX: double;
     procedure SetX(vX: double);
@@ -191,13 +203,24 @@ type
     function SaveToStream: TStream;
     function SaveToString: string;
     function CreateContentStream(cs: TPDFContentStream = csToViewBrowser): TStream;
-    procedure Code25(vXPos, vYPos: double; vTextCode: string;
-      vBaseWidth: double = 1.00; vHeight: double = 10.00);
+    procedure Code25(vXPos, vYPos: double; vTextCode: string; vBaseWidth:
+      double = 1.00; vHeight: double = 10.00; vViewNum: Boolean = False;
+      vZeroWhenInvalidDigit: Boolean = True);
+    procedure Code128(vXPos, vYPos: Double; vTextCode: string; vWidth: Double;
+      vHeight: Double);
+    function CurrentFontCW: TCW;
     procedure Header; Virtual;
     procedure Footer; Virtual;
+
+    property ProxyHost: string read FProxyHost Write FProxyHost;
+    property ProxyPort: string read FProxyPort Write FProxyPort;
+    property ProxyUser: string read FProxyUser Write FProxyUser;
+    property ProxyPass: string read FProxyPass Write FProxyPass;
   end;
 
 implementation
+
+uses strutils, math;
 
 { TJPFpdf }
 
@@ -229,15 +252,15 @@ const
     TwoDigitYearCenturyWindow: 50;
     );
   JORIENTATION: array[TPDFOrientation] of char = ('P', 'L', #0);
-  JUNIT: array[TPDFUnit] of double = (1, 72 / 25.4, 72 / 2.54, 72);
+  JUNIT: array[TPDFUnit] of double = (1, 72 / 25.4, 72 / 2.54, 72, 0.75);
   JFORMAT_W: array[TPDFPageFormat] of double = (841.89, 595.28, 420.94, 612, 612);
   JFORMAT_H: array[TPDFPageFormat] of double = (1190.55, 841.89, 595.28, 792, 1008);
   JCOLOR_R: array[TJPColor] of smallint =
-    (0, 192, 128, 255, 128, 255, 128, 255, 0, 0, 128, 255, 0, 0, 0, 0);
+    (0, 192, 128, 255, 128, 255, 128, 255, 0, 0, 128, 255, 0, 0, 0, 0, 220);
   JCOLOR_G: array[TJPColor] of smallint =
-    (0, 192, 128, 255, 0, 0, 0, 0, 128, 255, 128, 255, 0, 0, 128, 255);
+    (0, 192, 128, 255, 0, 0, 0, 0, 128, 255, 128, 255, 0, 0, 128, 255, 220);
   JCOLOR_B: array[TJPColor] of smallint =
-    (0, 192, 128, 255, 0, 0, 128, 255, 0, 0, 0, 0, 128, 255, 128, 255);
+    (0, 192, 128, 255, 0, 0, 128, 255, 0, 0, 0, 0, 128, 255, 128, 255, 220);
   JFONTFAMILY: array[TPDFFontFamily] of shortstring =
     ('Courier', 'Helvetica', 'Times', 'Symbol', 'Zapfdingbats');
   JFONTSTYLE: array[TPDFFontStyle] of shortstring =
@@ -245,91 +268,124 @@ const
   JDISPLAYMODE: array[TPDFDisplayMode] of shortstring =
     ('fullpage', 'fullwidth', 'real', 'default', 'zoom');
   FREE_JPDF_PASCAL_VERSION = '1.0 Stable';
+  JBC128Start: array[TPDFBarCode128] of smallint = (103,104,105);  // Set selection characters at the start of C128
+  JBC128Swap: array[TPDFBarCode128] of smallint = (101,100,99);    // Set change characters
+  JBC128: array [0..107,0..5] of Integer =                         // Code table 128
+       (
+         (2, 1, 2, 2, 2, 2),           //0 : [ ]
+         (2, 2, 2, 1, 2, 2),           //1 : [!]
+         (2, 2, 2, 2, 2, 1),           //2 : ["]
+         (1, 2, 1, 2, 2, 3),           //3 : [#]
+         (1, 2, 1, 3, 2, 2),           //4 : [$]
+         (1, 3, 1, 2, 2, 2),           //5 : [%]
+         (1, 2, 2, 2, 1, 3),           //6 : [&]
+         (1, 2, 2, 3, 1, 2),           //7 : [']
+         (1, 3, 2, 2, 1, 2),           //8 : [(]
+         (2, 2, 1, 2, 1, 3),           //9 : [)]
+         (2, 2, 1, 3, 1, 2),           //10 : [*]
+         (2, 3, 1, 2, 1, 2),           //11 : [+]
+         (1, 1, 2, 2, 3, 2),           //12 : [,]
+         (1, 2, 2, 1, 3, 2),           //13 : [-]
+         (1, 2, 2, 2, 3, 1),           //14 : [.]
+         (1, 1, 3, 2, 2, 2),           //15 : [/]
+         (1, 2, 3, 1, 2, 2),           //16 : [0]
+         (1, 2, 3, 2, 2, 1),           //17 : [1]
+         (2, 2, 3, 2, 1, 1),           //18 : [2]
+         (2, 2, 1, 1, 3, 2),           //19 : [3]
+         (2, 2, 1, 2, 3, 1),           //20 : [4]
+         (2, 1, 3, 2, 1, 2),           //21 : [5]
+         (2, 2, 3, 1, 1, 2),           //22 : [6]
+         (3, 1, 2, 1, 3, 1),           //23 : [7]
+         (3, 1, 1, 2, 2, 2),           //24 : [8]
+         (3, 2, 1, 1, 2, 2),           //25 : [9]
+         (3, 2, 1, 2, 2, 1),           //26 : [:]
+         (3, 1, 2, 2, 1, 2),           //27 : [,]
+         (3, 2, 2, 1, 1, 2),           //28 : [<]
+         (3, 2, 2, 2, 1, 1),           //29 : [=]
+         (2, 1, 2, 1, 2, 3),           //30 : [>]
+         (2, 1, 2, 3, 2, 1),           //31 : [?]
+         (2, 3, 2, 1, 2, 1),           //32 : [@]
+         (1, 1, 1, 3, 2, 3),           //33 : [A]
+         (1, 3, 1, 1, 2, 3),           //34 : [B]
+         (1, 3, 1, 3, 2, 1),           //35 : [C]
+         (1, 1, 2, 3, 1, 3),           //36 : [D]
+         (1, 3, 2, 1, 1, 3),           //37 : [E]
+         (1, 3, 2, 3, 1, 1),           //38 : [F]
+         (2, 1, 1, 3, 1, 3),           //39 : [G]
+         (2, 3, 1, 1, 1, 3),           //40 : [H]
+         (2, 3, 1, 3, 1, 1),           //41 : [I]
+         (1, 1, 2, 1, 3, 3),           //42 : [J]
+         (1, 1, 2, 3, 3, 1),           //43 : [K]
+         (1, 3, 2, 1, 3, 1),           //44 : [L]
+         (1, 1, 3, 1, 2, 3),           //45 : [M]
+         (1, 1, 3, 3, 2, 1),           //46 : [N]
+         (1, 3, 3, 1, 2, 1),           //47 : [O]
+         (3, 1, 3, 1, 2, 1),           //48 : [P]
+         (2, 1, 1, 3, 3, 1),           //49 : [Q]
+         (2, 3, 1, 1, 3, 1),           //50 : [R]
+         (2, 1, 3, 1, 1, 3),           //51 : [S]
+         (2, 1, 3, 3, 1, 1),           //52 : [T]
+         (2, 1, 3, 1, 3, 1),           //53 : [U]
+         (3, 1, 1, 1, 2, 3),           //54 : [V]
+         (3, 1, 1, 3, 2, 1),           //55 : [W]
+         (3, 3, 1, 1, 2, 1),           //56 : [X]
+         (3, 1, 2, 1, 1, 3),           //57 : [Y]
+         (3, 1, 2, 3, 1, 1),           //58 : [Z]
+         (3, 3, 2, 1, 1, 1),           //59 : [[]
+         (3, 1, 4, 1, 1, 1),           //60 : [\]
+         (2, 2, 1, 4, 1, 1),           //61 : []]
+         (4, 3, 1, 1, 1, 1),           //62 : [^]
+         (1, 1, 1, 2, 2, 4),           //63 : [_]
+         (1, 1, 1, 4, 2, 2),           //64 : [`]
+         (1, 2, 1, 1, 2, 4),           //65 : [a]
+         (1, 2, 1, 4, 2, 1),           //66 : [b]
+         (1, 4, 1, 1, 2, 2),           //67 : [c]
+         (1, 4, 1, 2, 2, 1),           //68 : [d]
+         (1, 1, 2, 2, 1, 4),           //69 : [e]
+         (1, 1, 2, 4, 1, 2),           //70 : [f]
+         (1, 2, 2, 1, 1, 4),           //71 : [g]
+         (1, 2, 2, 4, 1, 1),           //72 : [h]
+         (1, 4, 2, 1, 1, 2),           //73 : [i]
+         (1, 4, 2, 2, 1, 1),           //74 : [j]
+         (2, 4, 1, 2, 1, 1),           //75 : [k]
+         (2, 2, 1, 1, 1, 4),           //76 : [l]
+         (4, 1, 3, 1, 1, 1),           //77 : [m]
+         (2, 4, 1, 1, 1, 2),           //78 : [n]
+         (1, 3, 4, 1, 1, 1),           //79 : [o]
+         (1, 1, 1, 2, 4, 2),           //80 : [p]
+         (1, 2, 1, 1, 4, 2),           //81 : [q]
+         (1, 2, 1, 2, 4, 1),           //82 : [r]
+         (1, 1, 4, 2, 1, 2),           //83 : [s]
+         (1, 2, 4, 1, 1, 2),           //84 : [t]
+         (1, 2, 4, 2, 1, 1),           //85 : [u]
+         (4, 1, 1, 2, 1, 2),           //86 : [v]
+         (4, 2, 1, 1, 1, 2),           //87 : [w]
+         (4, 2, 1, 2, 1, 1),           //88 : [x]
+         (2, 1, 2, 1, 4, 1),           //89 : [y]
+         (2, 1, 4, 1, 2, 1),           //90 : [z]
+         (4, 1, 2, 1, 2, 1),           //91 : [{]
+         (1, 1, 1, 1, 4, 3),           //92 : [|]
+         (1, 1, 1, 3, 4, 1),           //93 : [}]
+         (1, 3, 1, 1, 4, 1),           //94 : [~]
+         (1, 1, 4, 1, 1, 3),           //95 : [DEL]
+         (1, 1, 4, 3, 1, 1),           //96 : [FNC3]
+         (4, 1, 1, 1, 1, 3),           //97 : [FNC2]
+         (4, 1, 1, 3, 1, 1),           //98 : [SHIFT]
+         (1, 1, 3, 1, 4, 1),           //99 : [Cswap]
+         (1, 1, 4, 1, 3, 1),           //100 : [Bswap]
+         (3, 1, 1, 1, 4, 1),           //101 : [Aswap]
+         (4, 1, 1, 1, 3, 1),           //102 : [FNC1]
+         (2, 1, 1, 4, 1, 2),           //103 : [Astart]
+         (2, 1, 1, 2, 1, 4),           //104 : [Bstart]
+         (2, 1, 1, 2, 3, 2),           //105 : [Cstart]
+         (2, 3, 3, 1, 1, 1),           //106 : [STOP]
+         (2, 1, 0, 0, 0, 0)            //107 : [END BAR]
+       );
 
 constructor TJPFpdf.Create(orientation: TPDFOrientation; pageUnit: TPDFUnit;
   pageFormat: TPDFPageFormat);
-var
-  ssmargin: double;
 begin
-  //Initialization of properties
-  SetUTF8(False);
-  Self.page := 0;
-  Self.numObj := 2;
-  Self.buffer := TMemoryStream.Create;
-  Self.buffer.Position := 0;
-  Self.state := 0;
-  Self.InFooter := False;
-  Self.cFontFamily := ffTimes;
-  Self.cFontStyle := fsNormal;
-  Self.cFontSizePt := 12;
-  Self.pDrawColor := '0 G';
-  Self.pFillColor := '0 g';
-  Self.pTextColor := '0 g';
-  Self.pColorFlag := False;
-  Self.pUnderlineFlag := False;
-  Self.pgWs := 0;
-  //Fonts Char Sizes
-  Jpdf_charwidths[ffCourier][fsNormal] := FONT_COURIER_FULL;
-  Jpdf_charwidths[ffHelvetica][fsNormal] := FONT_HELVETICA_ARIAL;
-  Jpdf_charwidths[ffHelvetica][fsBold] := FONT_HELVETICA_ARIAL_BOLD;
-  Jpdf_charwidths[ffHelvetica][fsItalic] := FONT_HELVETICA_ARIAL_ITALIC;
-  Jpdf_charwidths[ffHelvetica][fsBoldItalic] := FONT_HELVETICA_ARIAL_BOLD_ITALIC;
-  Jpdf_charwidths[ffTimes][fsNormal] := FONT_TIMES;
-  Jpdf_charwidths[ffTimes][fsBold] := FONT_TIMES_BOLD;
-  Jpdf_charwidths[ffTimes][fsItalic] := FONT_TIMES_ITALIC;
-  Jpdf_charwidths[ffTimes][fsBoldItalic] := FONT_TIMES_BOLD_ITALIC;
-  Jpdf_charwidths[ffSymbol][fsNormal] := FONT_SYMBOL;
-  Jpdf_charwidths[ffZapfdingbats][fsNormal] := FONT_ZAPFDINGBATS;
-  //Scale factor
-  Self.pgK := JUNIT[pageUnit];
-  //Page format
-{  if(is_string(pageFormat)) then
-  begin}
-  Self.fwPt := JFORMAT_W[pageFormat];
-  Self.fhPt := JFORMAT_H[pageFormat];
-{  end    //                  TAMANHO PERSONALIZADO pageFormat sintaxe '9999.99,9999.99' largura,altura
-  else
-  begin
-    Self.fwPt := round(pageFormat[0]*Self.pgK,2);
-    Self.fhPt := round(pageFormat[1]*Self.pgK,2);
-  end;}
-  Self.fw := StrToFloat(FloatToStrF(Self.fwPt / Self.pgK, ffNumber,
-    14, 2, TPDFFormatSetings), TPDFFormatSetings);
-  Self.fh := StrToFloat(FloatToStrF(Self.fhPt / Self.pgK, ffNumber,
-    14, 2, TPDFFormatSetings), TPDFFormatSetings);
-  //Page orientation
-  if (orientation in [poPortrait, poDefault]) then
-  begin
-    Self.DefOrientation := orientation;
-    Self.wPt := Self.fwPt;
-    Self.hPt := Self.fhPt;
-  end
-  else
-  begin
-    Self.DefOrientation := orientation;
-    Self.wPt := Self.fhPt;
-    Self.hPt := Self.fwPt;
-  end;
-  Self.CurOrientation := Self.DefOrientation;
-  Self.dw := StrToFloat(FloatToStrF(Self.wPt / Self.pgK, ffNumber,
-    14, 2, TPDFFormatSetings), TPDFFormatSetings);
-  Self.dh := StrToFloat(FloatToStrF(Self.hPt / Self.pgK, ffNumber,
-    14, 2, TPDFFormatSetings), TPDFFormatSetings);
-  //Page margins (1 cm)
-  ssmargin := StrToFloat(FloatToStrF(28.35 / Self.pgK, ffNumber, 14,
-    2, TPDFFormatSetings), TPDFFormatSetings);
-  SetMargins(ssmargin, ssmargin);
-  //Interior cell margin (1 mm)
-  Self.cMargin := ssmargin / 10;
-  //Line width (0.2 mm)
-  Self.pLineWidth := StrToFloat(FloatToStrF(0.567 / Self.pgK, ffNumber, 14,
-    3, TPDFFormatSetings), TPDFFormatSetings);
-  //Automatic page break
-  SetAutoPageBreak(True, 2 * ssmargin);
-  //Full width display mode
-  SetDisplayMode(dmFullWidth);
-  //Compression
-  SetCompression(False);
+  Create(orientation, pageUnit, JFORMAT_W[pageFormat], JFORMAT_H[pageFormat]);
 end;
 
 destructor TJPFpdf.Destroy;
@@ -435,6 +491,7 @@ end;
 
 procedure TJPFpdf.Open;
 begin
+  Header;
   //Begin document
   _begindoc;
 end;
@@ -454,7 +511,7 @@ begin
   _enddoc;
 end;
 
-procedure TJPFpdf.AddPage(orientation: TPDFOrientation);
+procedure TJPFpdf.AddPage(Orientation: TPDFOrientation);
 var
   vdc, vfc, vtc: string;
   vfamily: TPDFFontFamily;
@@ -463,6 +520,9 @@ var
   vlw: double;
   vcf: boolean;
 begin
+  if ((Self.page = 1) and (Self.fhPt = 0)) then
+    Exit;
+
   //Start a new page
   if (Self.state = 0) then
     Self.Open();
@@ -662,11 +722,9 @@ procedure TJPFpdf.Text(vX, vY: double; vText: string);
 var
   sss: string;
 begin
-  if (pUTF8) then vText := UTF8ToUTF16(vText);
+  if (pUTF8) then vText := Utf8ToAnsi(vText);
   //Output a string
-  vText := StringReplace(StringReplace(
-    StringReplace(vText, '\', '\\', [rfReplaceAll]), ')', '\)', [rfReplaceAll]),
-    '(', '\(', [rfReplaceAll]);
+  vText := _escape(vText);
   sss := 'BT ' + FloatToStr(vX) + ' -' + FloatToStr(vY) + ' Td (' + vText + ') Tj ET';
   if ((Self.pUnderlineFlag) and (vText <> '')) then
     sss += ' ' + _dounderline(vX, vY, vText);
@@ -693,7 +751,7 @@ var
 begin
   fUTF8 := False;
   if (pUTF8) then begin
-    vText := UTF8ToUTF16(vText);
+    vText := Utf8ToAnsi(vText);
     SetUTF8(False);
     fUTF8 := True;
   end;
@@ -704,7 +762,7 @@ begin
     vstyle := fsNormal;
   vw := Self.dw - Self.rMargin - Self.cpX;
   vwmax := (vw - 2 * Self.cMargin) * 1000 / Self.cFontSize;
-  vs := StringReplace(vText, #13, '', [rfReplaceAll]);
+  vs := StringReplace(vText, #13, '', [rfReplaceAll]); // #13 = "\r"
   vnb := Length(vs);
   vsep := -1;
   vi := 0;
@@ -714,8 +772,8 @@ begin
   while (vi < vnb) do
   begin
     //Get next character
-    vc := vs[vi];
-    if (vc = #10) then
+    vc := vs[vi + 1];
+    if (vc = #10) then // #10 = "\n"
     begin
       //Explicit line break
       Cell(vw, vHeight, Copy(vs, vj, vi - vj), '0', 2, '', 0);
@@ -790,7 +848,7 @@ begin
   Result := Self.AutoPageBreak;
 end;
 
-procedure TJPFpdf.Image(vFile: string; vX: double; vY: double;
+procedure TJPFpdf.Image(vFileOrURL: string; vX: double; vY: double;
   vWidth: double; vHeight: double);
 var
   i: integer;
@@ -802,7 +860,7 @@ begin
   if (Length(Self.pImages) > 0) then
     for i := 0 to Length(Self.pImages) - 1 do
     begin
-      if (Self.pImages[i].filePath = vFile) then
+      if (Self.pImages[i].filePath = vFileOrURL) then
       begin
         flag := True;
         img := Self.pImages[i];
@@ -813,13 +871,35 @@ begin
   begin
     //First use of image, get info
     SetLength(Self.pImages, Length(Self.pImages) + 1);
-    Self.pImages[Length(Self.pImages) - 1].imgSource := TMemoryStream.Create;
-    Self.pImages[Length(Self.pImages) - 1] := GetInfoImage(vFile);
+    Self.pImages[Length(Self.pImages) - 1] := GetInfoImage(vFileOrURL);
     Self.pImages[Length(Self.pImages) - 1].n := Length(Self.pImages);
-    Self.pImages[Length(Self.pImages) - 1].filePath := vFile;
+    Self.pImages[Length(Self.pImages) - 1].filePath := vFileOrURL;
     img := Self.pImages[Length(Self.pImages) - 1];
   end
   else
+  //Automatic width or height calculus
+  if (vWidth = 0) then
+    vWidth := StrToFloat(FloatToStrF((vHeight * img.w / img.h), ffNumber,
+      14, 2, TPDFFormatSetings), TPDFFormatSetings);
+  if (vHeight = 0) then
+    vHeight := StrToFloat(FloatToStrF((vWidth * img.h / img.w), ffNumber,
+      14, 2, TPDFFormatSetings), TPDFFormatSetings);
+  _out('q ' + FloatToStr(vWidth) + ' 0 0 ' + FloatToStr(vHeight) +
+    ' ' + FloatToStr(vX) + ' -' + FloatToStr(vY + vHeight) + ' cm /I' +
+    IntToStr(Length(Self.pImages)) + ' Do Q');
+end;
+
+procedure TJPFpdf.Image(vImageStream: TStream; vTypeImageExt: String;
+  vX: double; vY: double; vWidth: double; vHeight: double);
+var
+  img: TJPImageInfo;
+begin
+  SetLength(Self.pImages, Length(Self.pImages) + 1);
+  Self.pImages[Length(Self.pImages) - 1] := GetInfoImage(vImageStream, vTypeImageExt);
+  Self.pImages[Length(Self.pImages) - 1].n := Length(Self.pImages);
+  Self.pImages[Length(Self.pImages) - 1].filePath := '';
+  img := Self.pImages[Length(Self.pImages) - 1];
+
   //Automatic width or height calculus
   if (vWidth = 0) then
     vWidth := StrToFloat(FloatToStrF((vHeight * img.w / img.h), ffNumber,
@@ -838,7 +918,7 @@ var
   vws, vx, vy, vdx: double;
   sss: string;
 begin
-  if (pUTF8) then vText := UTF8ToUTF16(vText);
+  if (pUTF8) then vText := Utf8ToAnsi(vText);
   //Output a cell
   if (((Self.cpY + vHeight) > Self.PageBreakTrigger) and not
     (Self.InFooter) and (AcceptPageBreak())) then
@@ -900,9 +980,7 @@ begin
       vdx := (vWidth - GetStringWidth(vText)) / 2
     else
       vdx := Self.cMargin;
-    vText := StringReplace(StringReplace(
-      StringReplace(vText, '\', '\\', [rfReplaceAll]), ')', '\)', [rfReplaceAll]),
-      '(', '\(', [rfReplaceAll]);
+    vText := _escape(vText);
     if (Self.pColorFlag) then
       sss += 'q ' + Self.pTextColor + ' ';
     sss += 'BT ' + FloatToStr((Self.cpX + vdx)) + ' -' + FloatToStr(
@@ -941,7 +1019,7 @@ var
 begin
   fUTF8 := False;
   if (pUTF8) then begin
-    vText := UTF8ToUTF16(vText);
+    vText := Utf8ToAnsi(vText);
     SetUTF8(False);
     fUTF8 := True;
   end;
@@ -953,9 +1031,9 @@ begin
     vWidth := Self.dw - Self.rMargin - Self.cpX;
   vwmax := (vWidth - 2 * Self.cMargin) * 1000 / Self.cFontSize;
   vText := vText + #0;
-  vs := StringReplace(vText, #13, '', [rfReplaceAll]);
+  vs := StringReplace(vText, #13, '', [rfReplaceAll]); // #13 = "\r"
   vnb := Length(vs);
-  if ((vnb > 0) and (vs[vnb - 1] = #10)) then
+  if ((vnb > 1) and (vs[vnb - 1] = #10)) then // #10 = "\n"
     vnb := vnb - 1;
   vb := '';
   if (vBorder <> '') then
@@ -989,7 +1067,7 @@ begin
   begin
     //Get next character
     vc := vs[vi];
-    if (vc = #10) then
+    if (vc = #10) then // #10 = "\n"
     begin
       //Explicit line break
       if (Self.pgWs > 0) then
@@ -1103,7 +1181,7 @@ procedure TJPFpdf.SetY(vY: double);
 begin
   //Set y position and reset x
   Self.cpX := Self.lMargin;
-  if (cpY >= 0) then
+  if (vY >= 0) then
     Self.cpY := vY
   else
     Self.cpY := Self.dh + vY;
@@ -1280,12 +1358,18 @@ begin
     //Replace number of pages
     for vn := 1 to vnb do
       Self.pages[vn] := StringReplace(Self.pages[vn], Self.DocAliasNbPages,
-        FormatFloat(StringOfChar('0',Length(Self.DocAliasNbPages)),vnb), []);
+                                      IntToStr(vnb), []);
+        // with leading zeros
+        // FormatFloat(StringOfChar('0',Length(Self.DocAliasNbPages)),vnb), []);
   end;
   if (JORIENTATION[Self.DefOrientation] = 'P') then
   begin
     vwPt := Self.fwPt;
-    vhPt := Self.fhPt;
+
+    if (Self.hPt = 0) then
+      vhPt := (Self.cpY+Self.bMargin)*Self.pgK
+    else
+      vhPt := Self.fhPt;
   end
   else
   begin
@@ -1308,10 +1392,13 @@ begin
     _out('/Contents ' + IntToStr(Self.numObj + 1) + ' 0 R>>');
     _out('endobj');
     //Page content
+    vp := Self.pages[vn];
+    if (Self.hPt = 0) then
+      vp := StringReplace(vp, '{%}formcont{%}', FloatToStr((Self.cpY+Self.bMargin)*Self.pgK), []);
+
     if (Self.compress) then
-      vp := GzCompress(Self.pages[vn])
-    else
-      vp := Self.pages[vn];
+      vp := GzCompress(vp);
+
     _newobj();
     _out('<<' + vfilter + '/Length ' + IntToStr(Length(vp)) + '>>');
     _out('stream');
@@ -1336,6 +1423,7 @@ begin
   vni := Self.numObj;
   for vu := 0 to Length(Self.pImages) - 1 do
   begin
+    try
     _newobj();
     _out('<</Type /XObject');
     _out('/Subtype /Image');
@@ -1351,6 +1439,9 @@ begin
     Self.buffer.CopyFrom(Self.pImages[vu].imgSource, Self.pImages[vu].imgSource.Size);
     _out(#10 + 'endstream');
     _out('endobj');
+    finally
+      Self.pImages[vu].imgSource.Free;
+    end;
   end;
   //Pages root
   Self.offsets[1] := Self.buffer.Size;
@@ -1439,6 +1530,8 @@ begin
 end;
 
 procedure TJPFpdf._beginpage(orientation: string);
+var
+  vhPt: String;
 begin
   Self.page := Self.page + 1;
   SetLength(Self.pages, Length(Self.pages) + 1);
@@ -1480,10 +1573,15 @@ begin
     end;
     Self.PageBreakTrigger := Self.dh - Self.bMargin;
   end;
+
+  vhPt := FloatToStr(Self.hPt);
+  if (vhPt = '0') then
+    vhPt := '{%}formcont{%}';
+
   //Set transformation matrix
   _out(FloatToStrF(Self.pgK, ffNumber, 14, 6, TPDFFormatSetings) +
     ' 0 0 ' + FloatToStrF(Self.pgK, ffNumber, 14, 6, TPDFFormatSetings) +
-    ' 0 ' + FloatToStr(Self.hPt) + ' cm');
+    ' 0 ' + vhPt + ' cm');
 end;
 
 procedure TJPFpdf._endpage;
@@ -1566,6 +1664,94 @@ begin
     sText := sText + #10;
     Self.buffer.Write(Pointer(sText)^, Length(sText) * SizeOf(char));
   end;
+end;
+
+constructor TJPFpdf.Create;
+begin
+  Create(poPortrait, puMM, pfA4);
+end;
+
+constructor TJPFpdf.Create(orientation: TPDFOrientation; pageUnit: TPDFUnit;
+  pageSizeW: Double; pageSizeH: Double);
+var
+  ssmargin: double;
+begin
+  //Initialization of properties
+  FProxyHost := '';
+  FProxyPass := '';
+  FProxyPort := '';
+  FProxyUser := '';
+
+  SetUTF8;
+  Self.page := 0;
+  Self.numObj := 2;
+  Self.buffer := TMemoryStream.Create;
+  Self.buffer.Position := 0;
+  Self.state := 0;
+  Self.InFooter := False;
+  Self.cFontFamily := ffTimes;
+  Self.cFontStyle := fsNormal;
+  Self.cFontSizePt := 12;
+  Self.pDrawColor := '0 G';
+  Self.pFillColor := '0 g';
+  Self.pTextColor := '0 g';
+  Self.pColorFlag := False;
+  Self.pUnderlineFlag := False;
+  Self.pgWs := 0;
+  //Fonts Char Sizes
+  Jpdf_charwidths[ffCourier][fsNormal] := FONT_COURIER_FULL;
+  Jpdf_charwidths[ffHelvetica][fsNormal] := FONT_HELVETICA_ARIAL;
+  Jpdf_charwidths[ffHelvetica][fsBold] := FONT_HELVETICA_ARIAL_BOLD;
+  Jpdf_charwidths[ffHelvetica][fsItalic] := FONT_HELVETICA_ARIAL_ITALIC;
+  Jpdf_charwidths[ffHelvetica][fsBoldItalic] := FONT_HELVETICA_ARIAL_BOLD_ITALIC;
+  Jpdf_charwidths[ffTimes][fsNormal] := FONT_TIMES;
+  Jpdf_charwidths[ffTimes][fsBold] := FONT_TIMES_BOLD;
+  Jpdf_charwidths[ffTimes][fsItalic] := FONT_TIMES_ITALIC;
+  Jpdf_charwidths[ffTimes][fsBoldItalic] := FONT_TIMES_BOLD_ITALIC;
+  Jpdf_charwidths[ffSymbol][fsNormal] := FONT_SYMBOL;
+  Jpdf_charwidths[ffZapfdingbats][fsNormal] := FONT_ZAPFDINGBATS;
+  //Scale factor
+  Self.pgK := JUNIT[pageUnit];
+  //Page format
+  Self.fwPt := pageSizeW;
+  Self.fhPt := pageSizeH;
+  Self.fw := StrToFloat(FloatToStrF(Self.fwPt / Self.pgK, ffNumber,
+    14, 2, TPDFFormatSetings), TPDFFormatSetings);
+  Self.fh := StrToFloat(FloatToStrF(Self.fhPt / Self.pgK, ffNumber,
+    14, 2, TPDFFormatSetings), TPDFFormatSetings);
+  //Page orientation
+  if (orientation in [poPortrait, poDefault]) then
+  begin
+    Self.DefOrientation := orientation;
+    Self.wPt := Self.fwPt;
+    Self.hPt := Self.fhPt;
+  end
+  else
+  begin
+    Self.DefOrientation := orientation;
+    Self.wPt := Self.fhPt;
+    Self.hPt := Self.fwPt;
+  end;
+  Self.CurOrientation := Self.DefOrientation;
+  Self.dw := StrToFloat(FloatToStrF(Self.wPt / Self.pgK, ffNumber,
+    14, 2, TPDFFormatSetings), TPDFFormatSetings);
+  Self.dh := StrToFloat(FloatToStrF(Self.hPt / Self.pgK, ffNumber,
+    14, 2, TPDFFormatSetings), TPDFFormatSetings);
+  //Page margins (1 cm)
+  ssmargin := StrToFloat(FloatToStrF(28.35 / Self.pgK, ffNumber, 14,
+    2, TPDFFormatSetings), TPDFFormatSetings);
+  SetMargins(ssmargin, ssmargin);
+  //Interior cell margin (1 mm)
+  Self.cMargin := ssmargin / 10;
+  //Line width (0.2 mm)
+  Self.pLineWidth := StrToFloat(FloatToStrF(0.567 / Self.pgK, ffNumber, 14,
+    3, TPDFFormatSetings), TPDFFormatSetings);
+  //Automatic page break
+  SetAutoPageBreak(True, 2 * ssmargin);
+  //Full width display mode
+  SetDisplayMode(dmFullWidth);
+  //Compression
+  SetCompression(False);
 end;
 
 function TJPFpdf.FloatToStr(Value: double): string;
@@ -1662,14 +1848,62 @@ begin
   end;
 end;
 
+function TJPFpdf.GetImageFromURL(const aURL: string; const aResponse: TStream
+  ): Boolean;
+var
+  vHTTP: THTTPSend;
+begin
+  vHTTP := THTTPSend.Create;
+  try
+    if (ProxyHost <> '') then
+    begin
+      vHTTP.ProxyHost := ProxyHost;
+      vHTTP.ProxyPort := ProxyPort;
+      vHTTP.ProxyUser := ProxyUser;
+      vHTTP.ProxyPass := ProxyPass;
+    end;
+    Result := vHTTP.HTTPMethod('GET', aURL);
+    if Result then
+    begin
+      aResponse.Seek(0, soBeginning);
+      aResponse.CopyFrom(vHTTP.Document, 0);
+    end;
+  finally
+    vHTTP.Free;
+  end;
+end;
+
 function TJPFpdf.GetInfoImage(imgFile: string): TJPImageInfo;
 var
   ir: TFPCustomImageReader;
   jw: TFPWriterJPEG;
   im: TFPMemoryImage;
   ex: string;
+  IsURL: Boolean;
+  LMemoryStream: TMemoryStream;
 begin
-  ex := StringReplace(UpperCase(ExtractFileExt(imgFile)), '.', '', [rfReplaceAll]);
+  IsURL := ((Pos('http://', imgFile) > 0) or (Pos('https://', imgFile) > 0));
+  if IsURL then
+  begin
+    ex := '';
+    if (Pos('.JPG', UpperCase(imgFile)) > 0) then
+      ex := 'JPG'
+    else
+    if (Pos('.JPEG', UpperCase(imgFile)) > 0) then
+      ex := 'JPEG'
+    else
+    if (Pos('.PNG', UpperCase(imgFile)) > 0) then
+      ex := 'PNG'
+    else
+    if (Pos('.BMP', UpperCase(imgFile)) > 0) then
+      ex := 'BMP'
+    else
+    if (Pos('.GIF', UpperCase(imgFile)) > 0) then
+      ex := 'GIF'
+  end
+  else
+    ex := StringReplace(UpperCase(ExtractFileExt(imgFile)), '.', '', [rfReplaceAll]);
+
   if (ex = '') then
     Error('File without an extension!');
   try
@@ -1688,7 +1922,73 @@ begin
       Error('Invalid extension from image: ' + ex);
     im := TFPMemoryImage.Create(1, 1);
     jw := TFPWriterJPEG.Create;
-    im.LoadFromFile(imgFile, ir);
+    LMemoryStream := TMemoryStream.Create;
+    try
+      // quando URL
+      if IsURL then
+      begin
+        if not GetImageFromURL(imgFile, LMemoryStream) then
+          raise Exception.Create('');
+
+        LMemoryStream.Position := 0;
+        im.LoadFromStream(LMemoryStream, ir);
+      end
+      else
+        im.LoadFromFile(imgFile, ir); // quando arquivo no disco
+    except
+      Error('Unsupported image formatting or image missing: ' + ex);
+    end;
+    Result.imgSource := TMemoryStream.Create;
+    im.SaveToStream(Result.imgSource, jw);
+    if (jw.GrayScale) then
+      Result.cs := 'DeviceGray'
+    else
+      Result.cs := 'DeviceRGB';
+    Result.w := im.Width;
+    Result.h := im.Height;
+    Result.bpc := 8;
+    Result.f := 'DCTDecode';
+  finally
+    ir.Free;
+    im.Free;
+    jw.Free;
+    LMemoryStream.Free;
+  end;
+end;
+
+function TJPFpdf.GetInfoImage(vImageStream: TStream; vTypeImageExt: String
+  ): TJPImageInfo;
+var
+  ir: TFPCustomImageReader;
+  jw: TFPWriterJPEG;
+  im: TFPMemoryImage;
+  ex: string;
+begin
+  ex := UpperCase(vTypeImageExt);
+  if (ex = '') then
+    Error('File without an extension!');
+  try
+    if (ex = 'PNG') then
+      ir := TFPReaderPNG.Create
+    else
+    if ((ex = 'JPG') or (ex = 'JPEG')) then
+      ir := TFPReaderJPEG.Create
+    else
+    if (ex = 'BMP') then
+      ir := TFPReaderBMP.Create
+    else
+    if (ex = 'GIF') then
+      ir := TFPReaderGif.Create
+    else
+      Error('Invalid extension from image: ' + ex);
+    im := TFPMemoryImage.Create(1, 1);
+    jw := TFPWriterJPEG.Create;
+    try
+      vImageStream.Position := 0;
+      im.LoadFromStream(vImageStream, ir);
+    except
+      Error('Unsupported image formatting or image missing: ' + ex);
+    end;
     Result.imgSource := TMemoryStream.Create;
     im.SaveToStream(Result.imgSource, jw);
     if (jw.GrayScale) then
@@ -1707,7 +2007,8 @@ begin
 end;
 
 procedure TJPFpdf.Code25(vXPos, vYPos: double; vTextCode: string;
-  vBaseWidth: double; vHeight: double);
+  vBaseWidth: double; vHeight: double; vViewNum: Boolean;
+  vZeroWhenInvalidDigit: Boolean);
 var
   vbarChar: array[48..90] of string;
   vnarrow, vwide: double;
@@ -1718,7 +2019,7 @@ var
   vbar: integer;
   vlineWidth: double;
 begin
-  if (pUTF8) then vTextCode := UTF8ToUTF16(vTextCode);
+  if (pUTF8) then vTextCode := Utf8ToAnsi(vTextCode);
   vwide := vBaseWidth;
   vnarrow := vBaseWidth / 3;
 
@@ -1740,8 +2041,12 @@ begin
   if (Length(vTextCode) mod 2 <> 0) then
     vTextCode := '0' + vTextCode;
 
-  SetFont(ffHelvetica, fsNormal, 10);
-  Text(vXPos, vYPos + vHeight + 4, vTextCode);
+  if vViewNum then
+  begin
+    SetFont(ffHelvetica, fsNormal, 10);
+    Text(vXPos, vYPos + vHeight + 4, vTextCode);
+  end;
+
   SetFillColor(0);
 
   // add start and stop codes
@@ -1754,9 +2059,19 @@ begin
     vcharSpace := vTextCode[vi + 2];
     // check whether it is a valid digit
     if not (Ord(vcharBar) in [48..57, 65, 90]) then
-      Error('Invalid character in barcode: ' + vcharBar);
+    begin
+      if vZeroWhenInvalidDigit then
+        vcharBar := '0'
+      else
+        Error('Invalid character in barcode: ' + vcharBar);
+    end;
     if not (Ord(vcharSpace) in [48..57, 65, 90]) then
-      Error('Invalid character in barcode: ' + vcharSpace);
+    begin
+      if vZeroWhenInvalidDigit then
+        vcharSpace := '0'
+      else
+        Error('Invalid character in barcode: ' + vcharSpace);
+    end;
     // create a wide/narrow-sequence (first digit=bars, second digit=spaces)
     vseq := '';
     for vs := 0 to Length(vbarChar[Ord(vcharBar)]) - 1 do
@@ -1775,6 +2090,218 @@ begin
     end;
     vi := vi + 2;
   end;
+end;
+
+procedure TJPFpdf.Code128(vXPos, vYPos: Double; vTextCode: string;
+  vWidth: Double; vHeight: Double);
+var
+  Aguid, Bguid, Cguid, needle: String;
+  Aset, Bset, Cset, SminiC, crypt: String;
+  ABCset: String;
+  I, J, IminiC, made, madeA, madeB, check: Integer;
+  jeu: TPDFBarCode128;
+  modul: Double;
+  SetTo: array [TPDFBarCode128] of string;
+  SetFrom: array [TPDFBarCode128] of string;
+  C: array of Integer;
+
+  procedure Inicializar;
+  var
+    H: Integer;
+  begin
+    // character sets
+    for H := 32 to 95 do
+      ABCset := ABCset + chr(H);
+
+    Aset := ABCset;
+    Bset := ABCset;
+
+    for H := 0 to 31 do
+    begin
+      ABCset := ABCset + chr(H);
+      Aset := Aset + chr(H);
+    end;
+
+    for H := 96 to 127 do
+    begin
+      ABCset := ABCset + chr(H);
+      Bset := Bset + chr(H);
+    end;
+
+    // control 128
+    for H := 200 to 210 do
+    begin
+      ABCset := ABCset + chr(H);
+      Aset := Aset + chr(H);
+      Bset := Bset + chr(H);
+    end;
+
+    Cset := '0123456789' + chr(206);
+
+    // converters of A & B sets
+    for H := 0 to 95 do
+    begin
+      SetFrom[pdfbcCode128A] := SetFrom[pdfbcCode128A] + chr(H);
+      SetFrom[pdfbcCode128B] := SetFrom[pdfbcCode128B] + chr(H + 32);
+      SetTo[pdfbcCode128A] := SetTo[pdfbcCode128A] + chr(ifthen((H < 32),H+64,H-32));
+      SetTo[pdfbcCode128B] := SetTo[pdfbcCode128B] + chr(H);
+    end;
+
+    // control of A & B sets
+    for H := 96 to 106 do
+    begin
+      SetFrom[pdfbcCode128A] := SetFrom[pdfbcCode128A] + chr(H + 104);
+      SetFrom[pdfbcCode128B] := SetFrom[pdfbcCode128B] + chr(H + 104);
+      SetTo[pdfbcCode128A] := SetTo[pdfbcCode128A] + chr(H);
+      SetTo[pdfbcCode128B] := SetTo[pdfbcCode128B] + chr(H);
+    end;
+  end;
+
+begin
+  //TODO: Corrigir os tipos A e B http://www.fpdf.org/en/script/script88.php
+  Inicializar;
+
+  Aguid := '';
+  Bguid := '';
+  Cguid := '';
+  // Creation of ABC choice guides
+  for I:=0 to Length(vTextCode) - 1 do
+  begin
+    needle := Copy(vTextCode,I+1,1);
+    Aguid := Aguid + IfThen((Pos(needle,Aset) <= 0), 'N', 'O');
+    Bguid := Bguid + IfThen((Pos(needle,Bset) <= 0), 'N', 'O');
+    Cguid := Cguid + IfThen((Pos(needle,Cset) <= 0), 'N', 'O');
+  end;
+
+  SminiC := 'OOOO';
+  IminiC := 4;
+  crypt := '';
+
+  // MAIN CODING LOOP
+  while Length(vTextCode) > 0 do
+  begin
+
+    // forcing of set C, if possible
+    I := Pos(SminiC,Cguid);
+    if (I > 0) then
+    begin
+      Aguid[I] := 'N';
+      Bguid[I] := 'N';
+    end;
+
+    // set C
+    if (Copy(Cguid,1,IminiC) = SminiC) then
+    begin
+      // start Cstart, otherwise Cswap
+      crypt := crypt + chr(StrToInt(
+        IfThen((Length(crypt) > 0),
+          JBC128Swap[pdfbcCode128C].ToString,
+          JBC128Start[pdfbcCode128C].ToString)));
+
+      // extended from set C
+      made := Pos('N',Cguid);
+      if (made <= 0) then
+        made := Length(Cguid);
+
+      // only an even number
+      if ((made Mod 2) = 1) then
+        made := made - 1;
+
+      I := 0;
+      while I <= (made - 1) do
+      begin
+        // 2 by 2 conversion
+        crypt := crypt + chr(StrToInt(Copy(vTextCode,I+1,2)));
+        I := I + 2;
+      end;
+      jeu := pdfbcCode128C;
+    end
+    else
+    begin
+      // extended from set A
+      madeA := Pos('N',Aguid);
+
+      if (madeA <= 0) then
+        madeA := Length(Aguid);
+
+      // extended from set B
+      madeB := Pos('N',Bguid);
+
+      if (madeB <= 0) then
+        madeB := Length(Bguid);
+
+      // extended processed
+      made := IfThen((madeA < madeB),madeB,madeA);
+
+      // Set in progress
+      if (madeA < madeB) then
+        jeu := pdfbcCode128B
+      else
+        jeu := pdfbcCode128A;
+
+      // start start, otherwise swap
+      crypt := crypt + chr(StrToInt(IfThen((Length(crypt) > 0),
+        JBC128Swap[jeu].ToString,JBC128Start[jeu].ToString)));
+
+      // conversion according to set
+      crypt := crypt +
+        StringReplace(Copy(vTextCode,1,made), SetFrom[jeu], SetTo[jeu],[]);
+    end;
+    // shorten the legend and guides of the treated area
+    vTextCode := Copy(vTextCode,made+1,Length(vTextCode));
+    Aguid := Copy(Aguid,made+1,Length(Aguid));
+    Bguid := Copy(Bguid,made+1,Length(Bguid));
+    Cguid := Copy(Cguid,made+1,Length(Cguid));
+  end; // END MAIN LOOP
+
+  // calculate the checksum
+  check := Ord(crypt[1]);
+
+  for I:=0 to Length(crypt) - 1 do
+    check := check + (ord(crypt[I+1]) * I);
+
+  check := check mod 103;
+
+  // Complete encrypted chain
+  crypt := crypt + chr(check) + chr(106) + chr(107);
+
+  // calculate the width of the module
+  I := (Length(crypt) * 11) - 8;
+  modul := vWidth/I;
+
+  // PRINT LOOP
+  for I:=0 to Length(crypt)-1 do
+  begin
+    SetLength(C,Length(JBC128[ord(crypt[I+1])]));
+    C := JBC128[ord(crypt[I+1])];
+    J := 0;
+    while (J <= (Length(C) - 1)) do
+    begin
+      if C[J] = 0 then
+      begin
+        J := J + 1;
+        Continue;
+      end;
+
+      Self.Rect(vXPos,vYPos,C[J]*modul,vHeight,'F');
+
+      //not at the last position
+      if not (J = Length(C)-1) then
+        vXPos := vXPos + (C[J]+C[J+1])*modul;
+
+      J := J + 2;
+    end;
+  end;
+end;
+
+function TJPFpdf.CurrentFontCW: TCW;
+var
+  vfamily: TPDFFontFamily;
+  vstyle: TPDFFontStyle;
+begin
+  vfamily := Self.cFontFamily;
+  vstyle := Self.cFontStyle;
+  Result := Self.Jpdf_charwidths[vfamily][vstyle];
 end;
 
 end.
